@@ -4,55 +4,298 @@
 // These functions run in page context via chrome.scripting.executeScript.
 
 // ============================================================
-// Element Visibility
+// Types
+// ============================================================
+
+export interface VisibilityOptions {
+    /** Check if element is occluded by other elements (default: true) */
+    checkOcclusion?: boolean;
+    /** Extra pixels beyond viewport to consider visible (default: 0) */
+    viewportThreshold?: number;
+    /** Require element to be clickable (default: false) */
+    requireClickable?: boolean;
+    /** Check visibility across iframe parents (default: false) */
+    checkFrames?: boolean;
+    /** Treat aria-hidden="true" as invisible (default: false) */
+    checkAriaHidden?: boolean;
+}
+
+// ============================================================
+// Element Visibility (unified)
 // ============================================================
 
 /**
- * Check if an element is visible based on computed style and bounding rect.
- * Combines CSS visibility checks with geometric checks.
+ * Check if an element is visible.
+ *
+ * This is the single, unified visibility check that replaces the previous
+ * separate functions (isElementVisible, isInViewport, isVisibleAcrossFrames,
+ * isVisibleWithinIframeScroll).
+ *
+ * Checks performed:
+ *   1. HTML attribute checks (hidden, aria-hidden)
+ *   2. Collapsed <details> detection
+ *   3. Computed style chain walk (display, visibility, opacity, clip)
+ *   4. Bounding rect (zero-size, tiny + overflow hidden)
+ *   5. Viewport intersection with configurable threshold
+ *   6. Cross-frame visibility via window.frameElement traversal (optional)
+ *   7. Occlusion check via multi-point elementsFromPoint (optional)
+ *   8. Clickability check via elementFromPoint + pointer-events (optional)
+ *
+ * @param el - Element to check
+ * @param options - Configuration options
+ * @returns true if element is considered visible
  */
-export function isElementVisible(el: Element): boolean {
-    // Geometric check first (cheapest)
-    const rect = el.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) return false;
+export function isElementVisible(
+    el: HTMLElement,
+    options: VisibilityOptions = {}
+): boolean {
+    const {
+        checkOcclusion = true,
+        viewportThreshold = 0,
+        requireClickable = false,
+        checkFrames = false,
+        checkAriaHidden = false,
+    } = options;
 
-    // Computed style check
-    try {
-        const style = window.getComputedStyle(el);
-        if (style.display === 'none') return false;
-        if (style.visibility === 'hidden') return false;
-        if (style.opacity === '0') return false;
+    if (!el || !(el instanceof HTMLElement)) return false;
 
-        // Check for zero-height clip (common CSS hiding technique)
-        if (style.clip === 'rect(0px, 0px, 0px, 0px)' || style.clipPath === 'inset(100%)') return false;
+    // ===============================
+    // 1️⃣ HTML attribute checks
+    // ===============================
+    if (el.hasAttribute('hidden')) return false;
+    if (checkAriaHidden && el.getAttribute('aria-hidden') === 'true') return false;
 
-        // Check for off-screen positioning
-        const position = style.position;
-        if (position === 'absolute' || position === 'fixed') {
-            // Element might be positioned off-screen
-            if (rect.right < 0 || rect.bottom < 0) return false;
-            if (rect.left > window.innerWidth || rect.top > window.innerHeight * 3) return false;
+    // ===============================
+    // 2️⃣ Collapsed <details> check
+    // ===============================
+    // Content inside a closed <details> (other than <summary>) is invisible.
+    // Computed style may not reliably reflect this across all browsers.
+    if (!el.closest('summary')) {
+        const closestDetails = el.closest('details');
+        if (closestDetails && !closestDetails.hasAttribute('open') && closestDetails !== el) {
+            return false;
         }
-    } catch {
-        // getComputedStyle may fail for some elements
-        return true;
+    }
+
+    // ===============================
+    // 3️⃣ Computed style chain walk
+    // ===============================
+    // Walk up the entire parent chain to catch inherited hiding.
+    // This is more thorough than checking only the element itself.
+    let current: HTMLElement | null = el;
+    while (current) {
+        const style = window.getComputedStyle(current);
+
+        if (
+            style.display === 'none' ||
+            style.visibility === 'hidden' ||
+            style.visibility === 'collapse' ||
+            parseFloat(style.opacity) === 0
+        ) {
+            return false;
+        }
+
+        // CSS clipping techniques (e.g. .sr-only) — check on current element and ancestors
+        if (
+            style.clip === 'rect(0px, 0px, 0px, 0px)' ||
+            style.clipPath === 'inset(100%)'
+        ) {
+            return false;
+        }
+
+        current = current.parentElement;
+    }
+
+    // ===============================
+    // 4️⃣ Bounding rect checks
+    // ===============================
+    const rect = el.getBoundingClientRect();
+
+    // Zero-size elements are invisible
+    if (rect.width === 0 || rect.height === 0) {
+        return false;
+    }
+
+    // Tiny element (≤1px) with overflow hidden = effectively invisible
+    // Common pattern: width:1px; height:1px; overflow:hidden (screen-reader text)
+    if (rect.width <= 1 && rect.height <= 1) {
+        const style = window.getComputedStyle(el);
+        if (style.overflow === 'hidden') return false;
+    }
+
+    // ===============================
+    // 5️⃣ Viewport intersection
+    // ===============================
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const isIntersecting =
+        rect.bottom > -viewportThreshold &&
+        rect.right > -viewportThreshold &&
+        rect.top < viewportHeight + viewportThreshold &&
+        rect.left < viewportWidth + viewportThreshold;
+
+    if (!isIntersecting) return false;
+
+    // ===============================
+    // 6️⃣ Cross-frame visibility (optional)
+    // ===============================
+    // Traverse up through parent frames via window.frameElement.
+    // For cross-origin iframes, traversal stops (we assume visible).
+    if (checkFrames) {
+        const currentWindow = el.ownerDocument.defaultView;
+        if (!currentWindow) return false;
+
+        let currentWin: Window = currentWindow;
+
+        while (true) {
+            // Reached top-level window
+            if (currentWin === currentWin.parent || !currentWin.parent) break;
+
+            // Try to access the iframe element in the parent frame
+            let frameElement: Element | null;
+            try {
+                frameElement = currentWin.frameElement as Element | null;
+            } catch {
+                // Cross-origin: can't traverse further, assume visible
+                break;
+            }
+
+            if (!frameElement) break;
+
+            // Check CSS visibility of the iframe element itself
+            try {
+                const frameStyle =
+                    frameElement.ownerDocument.defaultView!.getComputedStyle(frameElement);
+                if (
+                    frameStyle.display === 'none' ||
+                    frameStyle.visibility === 'hidden' ||
+                    parseFloat(frameStyle.opacity) <= 0
+                ) {
+                    return false;
+                }
+            } catch {
+                // Can't access parent's computed style — skip
+            }
+
+            // Check if iframe has non-zero size
+            const frameRect = frameElement.getBoundingClientRect();
+            if (frameRect.width === 0 && frameRect.height === 0) return false;
+
+            // Check if iframe is within parent frame's viewport + threshold
+            let parentWindow: Window;
+            try {
+                parentWindow = currentWin.parent;
+            } catch {
+                break;
+            }
+
+            const iframeInParentViewport =
+                frameRect.left < parentWindow.innerWidth + viewportThreshold &&
+                frameRect.right > -viewportThreshold &&
+                frameRect.top < parentWindow.innerHeight + viewportThreshold &&
+                frameRect.bottom > -viewportThreshold;
+
+            if (!iframeInParentViewport) return false;
+
+            currentWin = parentWindow;
+        }
+    }
+
+    // ===============================
+    // 7️⃣ Occlusion check (multi-point)
+    // ===============================
+    // Uses elementsFromPoint at multiple positions to handle partial occlusion.
+    // Element is considered visible if ANY sample point is not fully occluded.
+    if (checkOcclusion) {
+        const points = [
+            { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },         // center
+            { x: rect.left + rect.width * 0.25, y: rect.top + rect.height * 0.25 },   // top-left quarter
+            { x: rect.left + rect.width * 0.75, y: rect.top + rect.height * 0.75 },   // bottom-right quarter
+        ];
+
+        let anyPointVisible = false;
+
+        for (const pt of points) {
+            // Clamp to viewport bounds (elementsFromPoint returns empty outside viewport)
+            const x = Math.max(0, Math.min(pt.x, window.innerWidth - 1));
+            const y = Math.max(0, Math.min(pt.y, window.innerHeight - 1));
+
+            const stack = document.elementsFromPoint(x, y);
+            const idx = stack.indexOf(el);
+
+            if (idx === -1) continue; // Element not in stack at this point
+
+            if (idx === 0) {
+                anyPointVisible = true;
+                break; // Element is on top at this point
+            }
+
+            // Check if all elements above are transparent/non-blocking
+            let blockedAtThisPoint = false;
+            for (let i = 0; i < idx; i++) {
+                const above = stack[i] as HTMLElement;
+
+                // Skip if the element above is a child of our element
+                // (children render on top of parent but don't occlude it)
+                if (el.contains(above)) continue;
+
+                const aboveStyle = window.getComputedStyle(above);
+                if (
+                    aboveStyle.pointerEvents !== 'none' &&
+                    aboveStyle.visibility !== 'hidden' &&
+                    parseFloat(aboveStyle.opacity) > 0
+                ) {
+                    blockedAtThisPoint = true;
+                    break;
+                }
+            }
+
+            if (!blockedAtThisPoint) {
+                anyPointVisible = true;
+                break;
+            }
+        }
+
+        if (!anyPointVisible) return false;
+    }
+
+    // ===============================
+    // 8️⃣ Clickability check (optional)
+    // ===============================
+    // Verifies that the element can actually receive click events.
+    if (requireClickable) {
+        // Check pointer-events in ancestor chain
+        let ancestor: HTMLElement | null = el.parentElement;
+        while (ancestor) {
+            const ancestorStyle = window.getComputedStyle(ancestor);
+            if (ancestorStyle.pointerEvents === 'none') {
+                // Ancestor disables pointer-events — check if el re-enables it
+                const elStyle = window.getComputedStyle(el);
+                if (elStyle.pointerEvents === 'none' || elStyle.pointerEvents === '') {
+                    return false;
+                }
+                break; // el explicitly re-enables pointer-events, ok
+            }
+            ancestor = ancestor.parentElement;
+        }
+
+        // Verify element is the top-most clickable target at its center
+        const centerX = Math.max(0, Math.min(rect.left + rect.width / 2, window.innerWidth - 1));
+        const centerY = Math.max(0, Math.min(rect.top + rect.height / 2, window.innerHeight - 1));
+        const topElement = document.elementFromPoint(centerX, centerY);
+
+        if (topElement && !el.contains(topElement) && topElement !== el) {
+            return false;
+        }
     }
 
     return true;
 }
 
-/**
- * Check if an element is within the current viewport.
- */
-export function isInViewport(el: Element): boolean {
-    const rect = el.getBoundingClientRect();
-    return (
-        rect.top < window.innerHeight &&
-        rect.bottom > 0 &&
-        rect.left < window.innerWidth &&
-        rect.right > 0
-    );
-}
+// ============================================================
+// Containment Check
+// ============================================================
 
 /**
  * Check if a child element is contained within parent bounds.
@@ -199,152 +442,4 @@ export function getScrollInfoText(el?: Element): string {
     }
 
     return parts.length > 0 ? `scroll: ${parts.join(' ')}` : '';
-}
-
-// ============================================================
-// Cross-Frame Visibility
-// ============================================================
-
-/**
- * Check if an element is visible across all parent frames (iframes).
- * Adapted from browser-use's DomService.is_element_visible_according_to_all_parents.
- *
- * browser-use approach:
- *   Uses CDP DOMSnapshot bounds and traverses frame hierarchy from child up to root,
- *   adjusting coordinates by iframe offsets and scroll positions.
- *
- * Chrome Extension adaptation:
- *   Uses getBoundingClientRect() (viewport-relative) and window.frameElement to
- *   traverse up through same-origin parent frames. For cross-origin iframes,
- *   traversal stops (we assume visible if CSS allows it).
- *
- * Algorithm:
- *   1. Check CSS visibility (display, visibility, opacity) — same as isElementVisible
- *   2. Check if element has non-zero bounding rect
- *   3. Check if element is within viewport + threshold in current frame
- *   4. Traverse up through parent frames via window.frameElement:
- *      - Get the iframe element's rect in parent frame
- *      - Check if the iframe itself is within parent viewport + threshold
- *      - Continue until top-level window or cross-origin boundary
- *
- * @param el - Element to check
- * @param viewportThreshold - Extra pixels beyond viewport to consider visible (default 1000)
- * @returns true if element is visible across all accessible parent frames
- */
-export function isVisibleAcrossFrames(el: Element, viewportThreshold: number = 1000): boolean {
-    // Step 1: Basic CSS visibility check
-    try {
-        const style = window.getComputedStyle(el);
-        if (style.display === 'none') return false;
-        if (style.visibility === 'hidden') return false;
-        try {
-            if (parseFloat(style.opacity) <= 0) return false;
-        } catch { /* non-numeric opacity, ignore */ }
-    } catch {
-        // Can't get computed style — assume visible
-    }
-
-    // Step 2: Check bounding rect in current frame
-    const rect = el.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) return false;
-
-    // Step 3: Check if within current frame's viewport + threshold
-    const currentWindow = el.ownerDocument.defaultView;
-    if (!currentWindow) return false;
-
-    const inCurrentViewport = (
-        rect.left < currentWindow.innerWidth + viewportThreshold &&
-        rect.right > -viewportThreshold &&
-        rect.top < currentWindow.innerHeight + viewportThreshold &&
-        rect.bottom > -viewportThreshold
-    );
-
-    if (!inCurrentViewport) return false;
-
-    // Step 4: Traverse up through parent frames
-    // Each iteration checks if the iframe element is visible in its parent frame
-    let currentWin: Window = currentWindow;
-
-    while (true) {
-        // Check if we're in the top-level window
-        if (currentWin === currentWin.parent || !currentWin.parent) {
-            break; // Reached top-level, element is visible
-        }
-
-        // Try to access the iframe element in the parent frame
-        // This will throw for cross-origin iframes
-        let frameElement: Element | null;
-        try {
-            frameElement = currentWin.frameElement as Element | null;
-        } catch {
-            // Cross-origin: can't traverse further
-            // Assume visible since CSS check passed in current frame
-            break;
-        }
-
-        if (!frameElement) {
-            break; // No frame element (detached or top-level)
-        }
-
-        // Check CSS visibility of the iframe element itself
-        try {
-            const frameStyle = frameElement.ownerDocument.defaultView!.getComputedStyle(frameElement);
-            if (frameStyle.display === 'none') return false;
-            if (frameStyle.visibility === 'hidden') return false;
-            try {
-                if (parseFloat(frameStyle.opacity) <= 0) return false;
-            } catch { /* ignore */ }
-        } catch {
-            // Can't access parent's computed style
-        }
-
-        // Check if iframe is within parent frame's viewport + threshold
-        const frameRect = frameElement.getBoundingClientRect();
-
-        if (frameRect.width === 0 && frameRect.height === 0) return false;
-
-        let parentWindow: Window;
-        try {
-            parentWindow = currentWin.parent;
-        } catch {
-            break; // Can't access parent
-        }
-
-        const iframeInParentViewport = (
-            frameRect.left < parentWindow.innerWidth + viewportThreshold &&
-            frameRect.right > -viewportThreshold &&
-            frameRect.top < parentWindow.innerHeight + viewportThreshold &&
-            frameRect.bottom > -viewportThreshold
-        );
-
-        if (!iframeInParentViewport) return false;
-
-        // Move up to parent window for next iteration
-        currentWin = parentWindow;
-    }
-
-    return true;
-}
-
-/**
- * Check if an element is visible within an iframe's scrollable area.
- * Helper for cross-frame visibility — checks if element's position
- * falls within the iframe's scroll viewport.
- *
- * @param el - Element inside the iframe
- * @param viewportThreshold - Extra pixels beyond visible area
- */
-export function isVisibleWithinIframeScroll(el: Element, viewportThreshold: number = 1000): boolean {
-    const rect = el.getBoundingClientRect();
-    const win = el.ownerDocument.defaultView;
-    if (!win) return false;
-
-    // In an iframe, getBoundingClientRect is relative to the iframe's viewport
-    // So we just check if element is within the viewport + threshold
-    return (
-        rect.bottom > -viewportThreshold &&
-        rect.top < win.innerHeight + viewportThreshold &&
-        rect.right > -viewportThreshold &&
-        rect.left < win.innerWidth + viewportThreshold
-    );
 }

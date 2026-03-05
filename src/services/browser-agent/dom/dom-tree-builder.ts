@@ -56,6 +56,12 @@ export function buildDOMTree(options: {
         'data-onclick', 'jsaction', '(click)', 'data-ng-click', 'data-ember-action',
     ]);
 
+    // Search element class/id indicators (from browser-use)
+    const SEARCH_INDICATORS_SET = new Set([
+        'search', 'magnify', 'glass', 'lookup', 'find', 'query',
+        'search-icon', 'search-btn', 'search-button', 'searchbox',
+    ]);
+
     const SKIP_TAGS = new Set([
         'script', 'style', 'noscript', 'template',
     ]);
@@ -75,57 +81,209 @@ export function buildDOMTree(options: {
         'accept', 'multiple', 'inputmode', 'autocomplete', 'contenteditable',
     ];
 
-    const PROPAGATING_TAGS = new Set(['a', 'button']);
+    // Elements that propagate bounds to their children.
+    // Children fully contained within these elements are NOT indexed separately.
+    // Mirrors browser-use's DOMTreeSerializer.PROPAGATING_ELEMENTS.
+    const PROPAGATING_ELEMENTS: Array<{ tag: string; role: string | null }> = [
+        { tag: 'a', role: null },           // Any <a>
+        { tag: 'button', role: null },           // Any <button>
+        { tag: 'div', role: 'button' },       // <div role="button">
+        { tag: 'div', role: 'combobox' },     // <div role="combobox">
+        { tag: 'span', role: 'button' },       // <span role="button">
+        { tag: 'span', role: 'combobox' },     // <span role="combobox">
+        { tag: 'input', role: 'combobox' },     // <input role="combobox">
+    ];
+    const CONTAINMENT_THRESHOLD = 0.95; // 95% of child must be within parent bounds
 
     // ---- Helper functions ----
 
-    function isVisible(el: Element): boolean {
+    /**
+     * Comprehensive element visibility check (inlined for page-context self-containment).
+     * Synced with isElementVisible() from visibility.ts.
+     *
+     * For DOM tree building, we skip occlusion and clickability checks (too expensive
+     * during full tree walk) but include all CSS, geometry, and HTML attribute checks.
+     */
+    function isElementVisible(el: Element): boolean {
+        // HTML attribute check
+        if (el.hasAttribute('hidden')) return false;
+
+        // Collapsed <details> check — content inside closed <details>
+        // (other than <summary>) is invisible
+        if (!el.closest('summary')) {
+            const closestDetails = el.closest('details');
+            if (closestDetails && !closestDetails.hasAttribute('open') && closestDetails !== el) {
+                return false;
+            }
+        }
+
+        // Bounding rect check
         const rect = el.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) return false;
-        try {
-            const s = window.getComputedStyle(el);
-            if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return false;
-        } catch { return true; }
+        if (rect.width === 0 || rect.height === 0) return false;
+
+        // Computed style chain walk — check el and all ancestors
+        let current: Element | null = el;
+        while (current) {
+            try {
+                const s = window.getComputedStyle(current);
+                if (
+                    s.display === 'none' ||
+                    s.visibility === 'hidden' ||
+                    s.visibility === 'collapse' ||
+                    s.opacity === '0'
+                ) {
+                    return false;
+                }
+                // CSS clipping techniques (e.g. .sr-only)
+                if (
+                    s.clip === 'rect(0px, 0px, 0px, 0px)' ||
+                    s.clipPath === 'inset(100%)'
+                ) {
+                    return false;
+                }
+            } catch {
+                break; // getComputedStyle may fail for some elements
+            }
+            current = current.parentElement;
+        }
+
+        // Tiny element with overflow hidden = effectively invisible (e.g. sr-only text)
+        if (rect.width <= 1 && rect.height <= 1) {
+            try {
+                const s = window.getComputedStyle(el);
+                if (s.overflow === 'hidden') return false;
+            } catch { /* skip */ }
+        }
+
+        // Viewport intersection with expansion threshold
+        const isIntersecting =
+            rect.bottom > -viewportExpansion &&
+            rect.right > -viewportExpansion &&
+            rect.top < window.innerHeight + viewportExpansion &&
+            rect.left < window.innerWidth + viewportExpansion;
+
+        if (!isIntersecting) return false;
+
         return true;
     }
 
-    function isInExpandedViewport(el: Element): boolean {
-        const rect = el.getBoundingClientRect();
-        return (
-            rect.bottom > -viewportExpansion &&
-            rect.top < window.innerHeight + viewportExpansion &&
-            rect.right > -viewportExpansion &&
-            rect.left < window.innerWidth + viewportExpansion
-        );
+    /**
+     * Check if two rects overlap enough to count as contained.
+     * Returns true if childRect is >= threshold fraction inside parentRect.
+     */
+    function isContainedInBounds(
+        child: DOMRect,
+        parent: DOMRect,
+        threshold: number
+    ): boolean {
+        const xOverlap = Math.max(0, Math.min(child.right, parent.right) - Math.max(child.left, parent.left));
+        const yOverlap = Math.max(0, Math.min(child.bottom, parent.bottom) - Math.max(child.top, parent.top));
+        const childArea = child.width * child.height;
+        if (childArea <= 0) return false;
+        return (xOverlap * yOverlap) / childArea >= threshold;
     }
 
     function isInteractive(el: Element): boolean {
         const tag = el.tagName.toLowerCase();
+
+        // ── Skip non-interactive containers ──────────────────────────────────
         if (tag === 'html' || tag === 'body') return false;
+
+        // ── role=presentation / role=none = explicitly decorative ─────────────
+        const elRole = el.getAttribute('role');
+        if (elRole === 'presentation' || elRole === 'none') return false;
+
+        // ── Disabled elements are not interactive ────────────────────────────
+        // Note: CDP version checks ax_node.properties for 'disabled'/'hidden'.
+        // Without CDP we use DOM attributes as a best-effort equivalent.
+        if (el.hasAttribute('disabled')) return false;
+        if (el.getAttribute('aria-disabled') === 'true') return false;
+        if (el.getAttribute('aria-hidden') === 'true') return false;
+
+        // ── contenteditable="false" overrides interactivity ──────────────────
+        if (el.getAttribute('contenteditable') === 'false') return false;
+
+        // ── Large iframes need interaction (e.g. scrolling their content) ────
+        // Mirrors browser-use: iframes > 100×100px are treated as interactive.
+        if (tag === 'iframe' || tag === 'frame') {
+            const r = el.getBoundingClientRect();
+            return r.width > 100 && r.height > 100;
+        }
+
+        // ── Natively interactive tags ─────────────────────────────────────────
         if (INTERACTIVE_TAGS_SET.has(tag)) return true;
 
-        // Label wrapping form controls
+        // ── Label handling ────────────────────────────────────────────────────
         if (tag === 'label') {
+            // Labels proxying via 'for' → don't double-count; let the input handle it
             if (el.getAttribute('for')) return false;
+            // Labels that directly wrap a form control ARE interactive
             if (hasFormControl(el, 2)) return true;
+            // Fall through to heuristics for all other label cases
         }
-        // Span wrapping form controls
-        if (tag === 'span' && hasFormControl(el, 2)) return true;
 
-        // Attribute checks
+        // ── Span / div wrapping a form control ───────────────────────────────
+        if ((tag === 'span' || tag === 'div') && hasFormControl(el, 2)) return true;
+
+        // ── Search element heuristic ──────────────────────────────────────────
+        // Matches browser-use's search_indicators detection.
+        {
+            const cls = (el.getAttribute('class') || '').toLowerCase();
+            const id = (el.getAttribute('id') || '').toLowerCase();
+            for (const indicator of SEARCH_INDICATORS_SET) {
+                if (cls.includes(indicator) || id.includes(indicator)) return true;
+            }
+            for (const attr of el.attributes) {
+                if (attr.name.startsWith('data-') && attr.value) {
+                    const v = attr.value.toLowerCase();
+                    for (const indicator of SEARCH_INDICATORS_SET) {
+                        if (v.includes(indicator)) return true;
+                    }
+                }
+            }
+        }
+
+        // ── Event handler attributes ──────────────────────────────────────────
+        // NOTE: addEventListener()-based listeners (React onClick, Vue @click compiled,
+        // vanilla JS) are invisible to DOM attribute scanning. browser-use detects them
+        // via CDP getEventListeners(). Without CDP we can only catch attribute-style
+        // handlers here — this is a known limitation.
         for (const attr of el.attributes) {
             if (INTERACTIVE_ATTRS_SET.has(attr.name)) return true;
             if (attr.name.startsWith('on') && attr.name.length > 2) return true;
             if (attr.name.startsWith('@') || attr.name.startsWith('v-on:')) return true;
         }
 
+        // ── ARIA role ─────────────────────────────────────────────────────────
         const role = el.getAttribute('role');
         if (role && INTERACTIVE_ROLES_SET.has(role)) return true;
+
+        // ── Contenteditable ───────────────────────────────────────────────────
         if (el.getAttribute('contenteditable') === 'true') return true;
 
+        // ── Explicit positive tabindex ────────────────────────────────────────
         const tabindex = el.getAttribute('tabindex');
         if (tabindex !== null && tabindex !== '-1') return true;
 
+        // ── Icon-size elements with interactive signals ───────────────────────
+        // Small elements (10-50px) that have class/role/onclick/aria-label are
+        // likely icon buttons. Mirrors browser-use's icon heuristic.
+        {
+            const r = el.getBoundingClientRect();
+            if (r.width >= 10 && r.width <= 50 && r.height >= 10 && r.height <= 50) {
+                if (
+                    el.hasAttribute('class') ||
+                    el.hasAttribute('role') ||
+                    el.hasAttribute('onclick') ||
+                    el.hasAttribute('data-action') ||
+                    el.hasAttribute('aria-label')
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        // ── Cursor pointer (last resort — most expensive) ─────────────────────
         try {
             if (window.getComputedStyle(el).cursor === 'pointer') return true;
         } catch { /* skip */ }
@@ -240,12 +398,19 @@ export function buildDOMTree(options: {
         children: NodeInfo[];
         textNodes: string[];
         isSvg: boolean;
+        /** True if this node is sufficiently contained within a propagating parent's bounds. */
+        excludedByParent: boolean;
     }
 
     let interactiveIdx = 1;
     const interactiveCount = { value: 0 };
 
-    function walkDOM(node: Node, depth: number): NodeInfo | null {
+    /**
+     * Walk the DOM and build a NodeInfo tree.
+     * activeBounds: if set, any child whose rect is ≥ CONTAINMENT_THRESHOLD inside
+     * these bounds will be marked excludedByParent (not indexed separately).
+     */
+    function walkDOM(node: Node, depth: number, activeBounds: DOMRect | null = null): NodeInfo | null {
         if (depth > maxDepth) return null;
 
         if (node.nodeType === Node.ELEMENT_NODE) {
@@ -259,19 +424,43 @@ export function buildDOMTree(options: {
             const isSvg = tag === 'svg';
             if (SVG_CHILD_TAGS.has(tag)) return null;
 
-            const vis = isVisible(el);
+            const vis = isElementVisible(el);
             const scroll = isScrollable(el);
             const interactive = isInteractive(el);
 
             // EXCEPTION: file inputs are often hidden but functional
             const isFileInput = tag === 'input' && el.getAttribute('type') === 'file';
 
+            // ── Bounding-box propagation exclusion ────────────────────────────────
+            // If parent is a propagating element (a, button, span role=button, etc.)
+            // and this child is sufficiently contained within parent's bounds,
+            // mark it excluded — it won't get its own index.
+            // Mirrors browser-use's _apply_bounding_box_filtering.
+            let excludedByParent = false;
+            if (activeBounds && vis) {
+                const childRect = el.getBoundingClientRect();
+                if (isContainedInBounds(childRect, activeBounds, CONTAINMENT_THRESHOLD)) {
+                    excludedByParent = true;
+                }
+            }
+
+            // ── Determine if this element propagates its bounds to children ───────
+            const elRole = el.getAttribute('role');
+            let nextActiveBounds = activeBounds;
+            const isPropagating = PROPAGATING_ELEMENTS.some(
+                p => p.tag === tag && (p.role === null || p.role === elRole)
+            );
+            if (isPropagating && vis) {
+                // This element's bounds will be used to exclude contained children
+                nextActiveBounds = el.getBoundingClientRect();
+            }
+
             // Skip completely invisible elements (unless file input or has children)
             if (!vis && !scroll && !interactive && !isFileInput) {
                 // But still check children — some invisible wrappers have visible content
                 const childResults: NodeInfo[] = [];
                 for (const child of node.childNodes) {
-                    const r = walkDOM(child, depth + 1);
+                    const r = walkDOM(child, depth + 1, nextActiveBounds);
                     if (r) childResults.push(r);
                 }
                 if (childResults.length === 0) return null;
@@ -280,7 +469,7 @@ export function buildDOMTree(options: {
                 return {
                     el, tag, isInteractive: false, isVisible: false,
                     isScrollable: false, children: childResults, textNodes: [],
-                    isSvg: false,
+                    isSvg: false, excludedByParent,
                 };
             }
 
@@ -296,7 +485,7 @@ export function buildDOMTree(options: {
                             textNodes.push(text.slice(0, 200));
                         }
                     } else {
-                        const r = walkDOM(child, depth + 1);
+                        const r = walkDOM(child, depth + 1, nextActiveBounds);
                         if (r) children.push(r);
                     }
                 }
@@ -305,7 +494,7 @@ export function buildDOMTree(options: {
             // Also check shadow DOM (open only)
             if (el.shadowRoot) {
                 for (const child of el.shadowRoot.childNodes) {
-                    const r = walkDOM(child, depth + 1);
+                    const r = walkDOM(child, depth + 1, nextActiveBounds);
                     if (r) children.push(r);
                 }
             }
@@ -313,7 +502,7 @@ export function buildDOMTree(options: {
             return {
                 el, tag, isInteractive: interactive,
                 isVisible: vis || isFileInput, isScrollable: scroll,
-                children, textNodes, isSvg,
+                children, textNodes, isSvg, excludedByParent,
             };
         }
 
@@ -349,7 +538,8 @@ export function buildDOMTree(options: {
         let nodeRendered = false;
 
         // Render interactive elements
-        if (info.isInteractive && info.isVisible) {
+        // Skip elements excluded by bounding-box propagation filtering.
+        if (info.isInteractive && info.isVisible && !info.excludedByParent) {
             const idx = interactiveIdx++;
             interactiveCount.value++;
             info.el.setAttribute('data-ba-idx', String(idx));

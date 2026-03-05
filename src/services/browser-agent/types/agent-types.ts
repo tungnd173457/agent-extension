@@ -135,14 +135,6 @@ export interface AgentStepInfo {
 // Browser State Summary (for LLM context)
 // ============================================================
 
-export interface PageStats {
-    links: number;
-    interactive: number;
-    iframes: number;
-    images: number;
-    totalElements: number;
-}
-
 export interface ScrollInfo {
     scrollY: number;
     scrollHeight: number;
@@ -154,10 +146,10 @@ export interface ScrollInfo {
 export interface BrowserStateSummary {
     url: string;
     title: string;
-    pageStats: PageStats;
     scrollInfo: ScrollInfo;
-    /** Formatted interactive elements text: [1]<button>Submit</button> */
+    /** Tree-structured interactive elements text from buildDOMTree */
     elementsText: string;
+    /** Number of interactive elements found */
     elementCount: number;
     /** Base64 screenshot data URL (if vision enabled) */
     screenshot?: string;

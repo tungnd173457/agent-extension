@@ -33,7 +33,7 @@ const INTERACTIVE_ATTRS = new Set([
     'data-ember-action',
 ]);
 
-/** Search-related indicators for detecting search elements */
+/** Search-related indicators for detecting search elements (from browser-use) */
 const SEARCH_INDICATORS = new Set([
     'search', 'magnify', 'glass', 'lookup', 'find', 'query',
     'search-icon', 'search-btn', 'search-button', 'searchbox',
@@ -44,55 +44,126 @@ const SEARCH_INDICATORS = new Set([
  * Comprehensive detection using tags, roles, attributes, and heuristics.
  *
  * Adapted from browser-use's ClickableElementDetector.is_interactive.
- * Removed: CDP-specific checks (has_js_click_listener, ax_node properties, snapshot_node).
- * Added: Better framework attribute detection, CSS cursor check.
+ *
+ * Checks (in order):
+ *   1. Skip html/body
+ *   2. Filter disabled/aria-disabled/aria-hidden elements
+ *   3. Filter contenteditable="false"
+ *   4. Large iframes (> 100×100px) — need scrolling/interaction
+ *   5. Natively interactive tags (button, input, a, select, etc.)
+ *   6. Label wrapping form controls
+ *   7. Span/div wrapping form controls
+ *   8. Search element heuristic (class/id/data-* matching search indicators)
+ *   9. Event handler attributes (onclick, @click, v-on:, etc.)
+ *      NOTE: addEventListener()-based handlers (React/Vue compiled) require CDP
+ *            getEventListeners() to detect — unavailable in extension context.
+ *  10. ARIA role
+ *  11. contenteditable="true"
+ *  12. Explicit positive tabindex
+ *  13. Icon-size heuristic (10–50px elements with interactive signals)
+ *  14. Cursor: pointer (most expensive, last resort)
  */
 export function isInteractiveElement(el: Element): boolean {
     const tag = el.tagName.toLowerCase();
 
-    // Skip html and body
+    // ── Skip non-interactive containers ──────────────────────────────────────
     if (tag === 'html' || tag === 'body') return false;
 
-    // 1. Natively interactive tags
+    // ── Disabled / hidden elements are not interactive ────────────────────────
+    // browser-use checks ax_node.properties for 'disabled'/'hidden' via CDP.
+    // Without CDP we use DOM attributes as a best-effort equivalent.
+    if (el.hasAttribute('disabled')) return false;
+    if (el.getAttribute('aria-disabled') === 'true') return false;
+    if (el.getAttribute('aria-hidden') === 'true') return false;
+
+    // ── contenteditable="false" explicitly suppresses interactivity ───────────
+    if (el.getAttribute('contenteditable') === 'false') return false;
+
+    // ── Large iframes need interaction (scrolling content inside) ─────────────
+    // Mirrors browser-use: iframes/frames > 100×100px are treated as interactive.
+    if (tag === 'iframe' || tag === 'frame') {
+        const r = el.getBoundingClientRect();
+        return r.width > 100 && r.height > 100;
+    }
+
+    // ── Natively interactive tags ─────────────────────────────────────────────
     if (INTERACTIVE_TAGS.has(tag)) return true;
 
-    // 2. Label handling (adapted from browser-use)
+    // ── Label handling ────────────────────────────────────────────────────────
     if (tag === 'label') {
-        // Skip labels that proxy via "for" (avoid double-clicking)
+        // Skip labels that proxy via "for" (avoid double-clicking the real input)
         if (el.getAttribute('for')) return false;
         // Labels wrapping form controls are interactive
         if (hasFormControlDescendant(el, 2)) return true;
+        // Fall through to heuristics for other label cases
     }
 
-    // 3. Span wrappers for UI components
-    if (tag === 'span' && hasFormControlDescendant(el, 2)) {
+    // ── Span / div wrapping a form control ───────────────────────────────────
+    if ((tag === 'span' || tag === 'div') && hasFormControlDescendant(el, 2)) {
         return true;
     }
 
-    // 4. Search element detection
-    if (isSearchElement(el)) return true;
+    // ── Search element heuristic ──────────────────────────────────────────────
+    // Matches browser-use's search_indicators detection.
+    {
+        const cls = (el.getAttribute('class') || '').toLowerCase();
+        const id = (el.getAttribute('id') || '').toLowerCase();
+        for (const indicator of SEARCH_INDICATORS) {
+            if (cls.includes(indicator) || id.includes(indicator)) return true;
+        }
+        for (const attr of el.attributes) {
+            if (attr.name.startsWith('data-') && attr.value) {
+                const v = attr.value.toLowerCase();
+                for (const indicator of SEARCH_INDICATORS) {
+                    if (v.includes(indicator)) return true;
+                }
+            }
+        }
+    }
 
-    // 5. Check interactive attributes (onclick, ng-click, @click, etc.)
+    // ── Event handler attributes ──────────────────────────────────────────────
+    // NOTE: addEventListener()-based listeners (React onClick, Vue @click compiled,
+    // vanilla JS) are invisible to DOM attribute scanning. browser-use detects them
+    // via CDP getEventListeners(). Without CDP we can only catch attribute-style
+    // handlers here — this is a known limitation of the extension approach.
     for (const attr of el.attributes) {
         if (INTERACTIVE_ATTRS.has(attr.name)) return true;
-
-        // Also check for framework event bindings in attribute names
+        // Catch any inline on* handler (oninput, onchange, etc.)
         if (attr.name.startsWith('on') && attr.name.length > 2) return true;
+        // Vue template syntax (@click, v-on:submit, etc.)
         if (attr.name.startsWith('@') || attr.name.startsWith('v-on:')) return true;
     }
 
-    // 6. ARIA role check
+    // ── ARIA role ─────────────────────────────────────────────────────────────
     const role = el.getAttribute('role');
     if (role && INTERACTIVE_ROLES.has(role)) return true;
 
-    // 7. Contenteditable
+    // ── Contenteditable ───────────────────────────────────────────────────────
     if (el.getAttribute('contenteditable') === 'true') return true;
 
-    // 8. Positive tabindex (explicitly focusable)
+    // ── Explicit positive tabindex ────────────────────────────────────────────
     const tabindex = el.getAttribute('tabindex');
     if (tabindex !== null && tabindex !== '-1') return true;
 
-    // 9. Cursor pointer check (last resort, most expensive)
+    // ── Icon-size elements with interactive signals ───────────────────────────
+    // Small elements (10–50px) with class/role/onclick/aria-label are likely
+    // icon buttons. Mirrors browser-use's ICON AND SMALL ELEMENT CHECK.
+    {
+        const r = el.getBoundingClientRect();
+        if (r.width >= 10 && r.width <= 50 && r.height >= 10 && r.height <= 50) {
+            if (
+                el.hasAttribute('class') ||
+                el.hasAttribute('role') ||
+                el.hasAttribute('onclick') ||
+                el.hasAttribute('data-action') ||
+                el.hasAttribute('aria-label')
+            ) {
+                return true;
+            }
+        }
+    }
+
+    // ── Cursor: pointer (last resort — most expensive) ────────────────────────
     try {
         const style = window.getComputedStyle(el);
         if (style.cursor === 'pointer') return true;
@@ -120,37 +191,6 @@ function hasFormControlDescendant(el: Element, maxDepth: number = 2): boolean {
         // Recurse into children
         if (hasFormControlDescendant(child, maxDepth - 1)) {
             return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Check if element looks like a search component.
- * Adapted from browser-use's search element detection logic.
- */
-function isSearchElement(el: Element): boolean {
-    // Check class names
-    const classStr = el.getAttribute('class') || '';
-    const classes = classStr.toLowerCase().split(/\s+/);
-    for (const indicator of SEARCH_INDICATORS) {
-        if (classes.some(c => c.includes(indicator))) return true;
-    }
-
-    // Check id
-    const id = (el.id || '').toLowerCase();
-    for (const indicator of SEARCH_INDICATORS) {
-        if (id.includes(indicator)) return true;
-    }
-
-    // Check data attributes
-    for (const attr of el.attributes) {
-        if (attr.name.startsWith('data-') && attr.value) {
-            const val = attr.value.toLowerCase();
-            for (const indicator of SEARCH_INDICATORS) {
-                if (val.includes(indicator)) return true;
-            }
         }
     }
 

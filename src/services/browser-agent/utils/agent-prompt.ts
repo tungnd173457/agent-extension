@@ -54,9 +54,14 @@ At every step, you receive:
 </input>
 
 <browser_state_format>
-Interactive elements are listed as: [index]<type attribute='value'>text</type>
-- Only elements with [index] are interactive and can be clicked/typed into.
+Interactive elements are shown in an indented tree format:
+  [index]<tag attribute=value /> — interactive elements with [index] can be clicked/typed into
+  |scroll element|<div /> (0.0↑ 2.5↓) — scrollable containers with pages above/below
+  text content — visible text on the page
+
 - Use the index number to reference elements in your actions (e.g., click-element with index).
+- Indentation represents DOM nesting.
+- Only elements with [index] are interactive.
 </browser_state_format>
 
 <tools>
@@ -119,24 +124,14 @@ export function buildStateMessage(
     stepInfo: AgentStepInfo,
     nudgeMessages: string[] = [],
 ): LLMMessage {
-    // --- Page Statistics ---
-    let statsText = '<page_stats>';
-    if (browserState.pageStats.totalElements < 10) {
-        statsText += 'Page appears empty (SPA not loaded?) - ';
-    }
-    statsText += `${browserState.pageStats.links} links, ${browserState.pageStats.interactive} interactive, `;
-    statsText += `${browserState.pageStats.iframes} iframes`;
-    if (browserState.pageStats.images > 0) {
-        statsText += `, ${browserState.pageStats.images} images`;
-    }
-    statsText += `, ${browserState.pageStats.totalElements} total elements`;
-    statsText += '</page_stats>';
+    // --- Page Info ---
+    let statsText = `<page_info>\n`;
+    statsText += `  ${browserState.elementCount} interactive elements`;
+    statsText += `\n  ${browserState.scrollInfo.pagesAbove.toFixed(1)} pages above, `;
+    statsText += `${browserState.scrollInfo.pagesBelow.toFixed(1)} pages below`;
+    statsText += `\n</page_info>`;
 
-    // --- Scroll Info ---
-    let pageInfoText = '<page_info>';
-    pageInfoText += `${browserState.scrollInfo.pagesAbove.toFixed(1)} pages above, `;
-    pageInfoText += `${browserState.scrollInfo.pagesBelow.toFixed(1)} pages below`;
-    pageInfoText += '</page_info>';
+
 
     // --- Elements with start/end markers ---
     let elementsText = browserState.elementsText;
@@ -168,8 +163,7 @@ export function buildStateMessage(
     stateText += '<browser_state>\n';
     stateText += `${statsText}\n`;
     stateText += `Current URL: ${browserState.url}\n`;
-    stateText += `Title: ${browserState.title}\n`;
-    stateText += `${pageInfoText}\n\n`;
+    stateText += `Title: ${browserState.title}\n\n`;
     stateText += `Interactive elements:\n${elementsText}\n`;
     stateText += '</browser_state>';
 

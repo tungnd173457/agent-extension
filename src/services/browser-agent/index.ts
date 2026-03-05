@@ -15,7 +15,6 @@ export type {
     AgentEvent,
     AgentEventType,
     BrowserStateSummary,
-    PageStats,
     ScrollInfo,
     HistoryItem,
     PageFingerprint,

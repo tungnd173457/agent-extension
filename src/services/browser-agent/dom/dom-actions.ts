@@ -24,6 +24,32 @@ export interface DropdownOption {
  */
 export function clickElementByIndex(index: number): { success: boolean; error?: string; description?: string } {
     try {
+        function _getElementText(el: Element): string {
+            const tag = el.tagName.toLowerCase();
+            if (tag === 'input') {
+                const input = el as HTMLInputElement;
+                return input.value || input.placeholder || el.getAttribute('aria-label') || input.name || '';
+            }
+            if (tag === 'textarea') {
+                const textarea = el as HTMLTextAreaElement;
+                return textarea.value || textarea.placeholder || el.getAttribute('aria-label') || '';
+            }
+            if (tag === 'select') {
+                const select = el as HTMLSelectElement;
+                return select.options[select.selectedIndex]?.text || el.getAttribute('aria-label') || '';
+            }
+            if (tag === 'img') {
+                return (el as HTMLImageElement).alt || el.getAttribute('aria-label') || '';
+            }
+            const directText = Array.from(el.childNodes)
+                .filter(n => n.nodeType === Node.TEXT_NODE)
+                .map(n => n.textContent?.trim() || '')
+                .filter(t => t.length > 0)
+                .join(' ');
+            if (directText) return directText.slice(0, 200);
+            return ((el as HTMLElement).innerText?.trim() || '').slice(0, 200);
+        }
+
         const el = document.querySelector(`[data-ba-idx="${index}"]`) as HTMLElement;
         if (!el) {
             return { success: false, error: `Element with index ${index} not found. The page may have changed - try refreshing elements.` };
@@ -302,6 +328,16 @@ export function waitForElement(
     visible: boolean = true
 ): Promise<{ success: boolean; found: boolean; error?: string }> {
     return new Promise((resolve) => {
+        function _isElementVisible(el: Element): boolean {
+            const rect = el.getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) return false;
+            try {
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+            } catch { return true; }
+            return true;
+        }
+
         const startTime = Date.now();
 
         function check() {
@@ -525,39 +561,3 @@ export function fillFormFields(fields: Record<string, string>): {
 // ============================================================
 // Internal helpers (inlined for page context self-containment)
 // ============================================================
-
-function _getElementText(el: Element): string {
-    const tag = el.tagName.toLowerCase();
-    if (tag === 'input') {
-        const input = el as HTMLInputElement;
-        return input.value || input.placeholder || el.getAttribute('aria-label') || input.name || '';
-    }
-    if (tag === 'textarea') {
-        const textarea = el as HTMLTextAreaElement;
-        return textarea.value || textarea.placeholder || el.getAttribute('aria-label') || '';
-    }
-    if (tag === 'select') {
-        const select = el as HTMLSelectElement;
-        return select.options[select.selectedIndex]?.text || el.getAttribute('aria-label') || '';
-    }
-    if (tag === 'img') {
-        return (el as HTMLImageElement).alt || el.getAttribute('aria-label') || '';
-    }
-    const directText = Array.from(el.childNodes)
-        .filter(n => n.nodeType === Node.TEXT_NODE)
-        .map(n => n.textContent?.trim() || '')
-        .filter(t => t.length > 0)
-        .join(' ');
-    if (directText) return directText.slice(0, 200);
-    return ((el as HTMLElement).innerText?.trim() || '').slice(0, 200);
-}
-
-function _isElementVisible(el: Element): boolean {
-    const rect = el.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) return false;
-    try {
-        const style = window.getComputedStyle(el);
-        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-    } catch { return true; }
-    return true;
-}

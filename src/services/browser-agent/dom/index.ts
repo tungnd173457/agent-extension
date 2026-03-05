@@ -41,14 +41,13 @@ export { buildDOMTree } from './dom-tree-builder';
 // ---- Visibility Utilities ----
 export {
     isElementVisible,
-    isInViewport,
     isContained,
     isElementScrollable,
     getScrollInfo,
     getScrollInfoText,
-    isVisibleAcrossFrames,
-    isVisibleWithinIframeScroll,
 } from './visibility';
+
+export type { VisibilityOptions } from './visibility';
 
 // ---- CSS Selector Generation ----
 export {

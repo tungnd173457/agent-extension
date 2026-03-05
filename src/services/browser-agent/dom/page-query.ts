@@ -77,6 +77,23 @@ export function searchPageText(
     maxResults: number = 25
 ): SearchResult {
     try {
+        function _buildCssPath(el: Element): string {
+            const parts: string[] = [];
+            let current: Element | null = el;
+            while (current && current !== document.body && current !== document.documentElement) {
+                let desc = current.tagName.toLowerCase();
+                if (current.id) {
+                    desc += `#${current.id}`;
+                } else if (current.className && typeof current.className === 'string') {
+                    const classes = current.className.trim().split(/\s+/).slice(0, 2).join('.');
+                    if (classes) desc += `.${classes}`;
+                }
+                parts.unshift(desc);
+                current = current.parentElement;
+            }
+            return parts.join(' > ');
+        }
+
         const scope = cssScope ? document.querySelector(cssScope) : document.body;
         if (!scope) {
             return { matches: [], total: 0, hasMore: false };
@@ -287,24 +304,3 @@ export function getPageMetadata(): PageMetadata {
 // ============================================================
 // Internal helpers
 // ============================================================
-
-/**
- * Build a CSS path for an element (for debugging / display).
- * Inlined here for self-containment in page context.
- */
-function _buildCssPath(el: Element): string {
-    const parts: string[] = [];
-    let current: Element | null = el;
-    while (current && current !== document.body && current !== document.documentElement) {
-        let desc = current.tagName.toLowerCase();
-        if (current.id) {
-            desc += `#${current.id}`;
-        } else if (current.className && typeof current.className === 'string') {
-            const classes = current.className.trim().split(/\s+/).slice(0, 2).join('.');
-            if (classes) desc += `.${classes}`;
-        }
-        parts.unshift(desc);
-        current = current.parentElement;
-    }
-    return parts.join(' > ');
-}
