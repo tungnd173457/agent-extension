@@ -46,8 +46,8 @@ export function clickElementByIndex(index: number): { success: boolean; error?: 
                 .map(n => n.textContent?.trim() || '')
                 .filter(t => t.length > 0)
                 .join(' ');
-            if (directText) return directText.slice(0, 200);
-            return ((el as HTMLElement).innerText?.trim() || '').slice(0, 200);
+            if (directText) return directText.slice(0, 50);
+            return ((el as HTMLElement).innerText?.trim() || '').slice(0, 50);
         }
 
         const el = document.querySelector(`[data-ba-idx="${index}"]`) as HTMLElement;
