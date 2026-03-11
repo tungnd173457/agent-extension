@@ -780,8 +780,8 @@ body {
     justify-content: center;
     gap: 8px;
     padding: 48px 24px;
-    border: 2px dashed rgba(124, 58, 237, 0.35);
-    border-radius: 16px;
+    border: 1px dashed var(--color-border);
+    border-radius: 10px;
     background: rgba(124, 58, 237, 0.04);
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
@@ -806,7 +806,6 @@ body {
     align-items: center;
     justify-content: center;
     color: white;
-    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
 }
 
 /* ---- Screenshot Button ---- */
@@ -816,33 +815,26 @@ body {
     justify-content: center;
     gap: 8px;
     padding: 12px 24px;
-    border-radius: 12px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
     color: white;
     border: none;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    background: var(--color-primary);
     cursor: pointer;
-    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+    transition: background 0.2s;
 }
 
 .ocr-screenshot-btn:hover {
-    background: linear-gradient(135deg, #7c3aed, #5b21b6);
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
-    transform: translateY(-1px);
-}
-
-.ocr-screenshot-btn:active {
-    transform: translateY(0);
+    background: #6d28d9;
 }
 
 /* ---- Image Preview Container ---- */
 .ocr-preview-container {
     border: 1px solid var(--chrome-border);
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
-    background: var(--chrome-bg);
+    background: var(--color-surface);
 }
 
 .ocr-preview-image-area {
@@ -883,7 +875,6 @@ body {
     border-radius: 6px;
     border: 1px solid rgba(0, 0, 0, 0.12);
     background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -985,7 +976,7 @@ body {
 /* ---- Result Panel ---- */
 .ocr-result-panel {
     border: 1px solid var(--chrome-border);
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
     background: var(--chrome-bg);
     display: flex;
