@@ -199,24 +199,84 @@ The chatbox `padding: 9px 10px 7px 11px` uses off-scale values intentionally to 
 
 ---
 
-## Existing Modes (unchanged behavior)
+## Module Consistency
 
-| Mode | Icon | Content |
-|------|------|---------|
-| Chat | MessageSquare | ChatLayout — messages + input |
-| Agent | Bot/target | AgentLayout — steps list + agent input |
-| Debug | Edit/pen | DebugLayout — 11 debug tool panels |
-| OCR | ScanText/grid | OcrLayout — drop zone → preview → result |
+All four modules must share the same visual foundation: white background, system font, 4-size type scale, consistent border radius, no shadows on internal components, no dark mode classes. Behavioral and layout logic is unchanged.
 
-Only the visual presentation changes. All existing logic, contexts, and services remain untouched.
+### Shared rules for all modules
+
+- Remove `font-['Inter',system-ui,sans-serif]` from any layout wrapper (found in `AgentLayout.tsx`, `ChatLayout.tsx`)
+- Replace all `dark:` Tailwind variant classes with their light-mode equivalents
+- Replace `text-xs` → `text-[11px]`, `text-sm` → `text-[12px]`, `text-base`/`text-lg`/`text-xl`/`text-2xl` → `text-[13px]`
+- Replace `rounded-2xl` → `rounded-[10px]`, `rounded-xl` → `rounded-[8px]`, `rounded-md` → `rounded-[6px]`; keep `rounded-lg` (8px) and `rounded-full` where semantically correct (send buttons, avatars)
+- Replace gradient accent buttons (`from-violet-500 to-purple-600`, `linear-gradient(135deg, #8b5cf6, #6d28d9)`) with flat `background: var(--color-primary)`
+- Remove all `box-shadow` and `shadow-*` utilities except the outer shell
+- Remove `backdrop-filter: blur` from all internal components
+- **Semantic status colors are kept as-is:** success green (`#10b981`, `text-emerald-500`) and error red (`#ef4444`, `text-red-400`) are state indicators, not branding, and remain unchanged across all modules
+
+---
+
+### Agent module (`AgentLayout.tsx`, `AgentInput.tsx`, `AgentStepList.tsx`, `AgentStepCard.tsx`, `AgentWelcomeScreen.tsx`, `AgentHistoryPanel.tsx`)
+
+| Issue | Fix |
+|-------|-----|
+| `font-['Inter'...]` in `AgentLayout.tsx` | Remove — system font stack inherits from body |
+| `text-2xl` in `AgentWelcomeScreen` title | → `text-[13px]` |
+| `text-lg` in `AgentHistoryPanel` header | → `text-[13px]` |
+| `text-sm`, `text-xs` throughout | → `text-[12px]` / `text-[11px]` |
+| `rounded-2xl` in `AgentInput` chatbox | → `rounded-[10px]` |
+| `rounded-xl` in `AgentWelcomeScreen` buttons | → `rounded-[8px]` |
+| `shadow-lg shadow-violet-500/25` on welcome icon badge | Remove shadow; keep gradient background |
+| `from-violet-500 to-purple-600` on `AgentInput` send button | → `background: var(--color-primary)` flat |
+| All `dark:` classes in all agent files | Remove; use light-mode values only |
+| `bg-gradient-to-br from-gray-200 to-gray-300` in `AgentStepList` avatar | → `background: var(--color-surface)` |
+
+---
+
+### Debug module (`DebugLayout.tsx`, `index.css` debug classes)
+
+**Accent color: amber (`#f59e0b`) is intentionally kept** as the debug module's semantic accent. It differentiates the developer tooling from the AI chat interface and is not a branding violation.
+
+| Issue | Fix |
+|-------|-----|
+| `text-sm`, `text-xs` in `DebugLayout` | → `text-[12px]` / `text-[11px]` |
+| `text-[#f59e0b]` orange label — keep | No change needed; amber is the debug accent |
+| `.debug-btn-run` gradient (`#f59e0b → #d97706`) — keep gradient, remove shadow | Keep gradient; ensure no `box-shadow` on button |
+| `.debug-btn-icon` background: `rgba(245,158,11,0.1)` — keep | No change; amber tint is correct |
+| `.debug-output` background: `#1e1e1e` — **keep dark** | Code output stays dark for readability |
+| `.debug-table` header `color: #f59e0b` — keep | No change |
+| All `@media (prefers-color-scheme: dark)` blocks in debug CSS | Deleted globally (see Dark mode section above) |
+| `.debug-output` currently conditionally light (`#f6f8fa`) via `@media light` | After media query removal, set unconditionally to `#1e1e1e` (dark is the chosen style) |
+
+---
+
+### OCR module (`OcrLayout.tsx`, `OcrDropZone.tsx`, `OcrImagePreview.tsx`, `OcrResultPanel.tsx`, `OcrToolbar.tsx`, `index.css` ocr classes)
+
+| Issue | Fix |
+|-------|-----|
+| `.ocr-drop-zone` border: `2px dashed` | → `1px dashed var(--color-border)` |
+| `.ocr-drop-zone` `border-radius: 16px` | → `10px` |
+| `.ocr-drop-zone-icon` `box-shadow: 0 2px 10px rgba(124,58,237,0.3)` | Remove shadow |
+| `.ocr-screenshot-btn` `box-shadow: 0 4px 14px` + hover `0 6px 20px` | Remove both shadows |
+| `.ocr-screenshot-btn` gradient `linear-gradient(135deg, #8b5cf6, #6d28d9)` | → `background: var(--color-primary)` flat |
+| `.ocr-screenshot-btn` `font-size: 14px` | → `13px` |
+| `.ocr-image-preview` `border-radius: 12px` | → `8px` |
+| `.ocr-result-panel` `border-radius: 12px` | → `8px` |
+| `.ocr-zoom-btn` `backdrop-filter: blur(8px)` | Remove |
+| `.ocr-zoom-btn` dark mode background/border | Remove dark variants; light-mode values only |
+| Image preview area dark background `#1a1a2e` | Remove; use `background: var(--color-surface)` |
+| `text-base` in `OcrLayout` header | → `text-[13px]` |
+| `text-xs`, `text-sm` in OCR components | → `text-[11px]` / `text-[12px]` |
+| All `dark:` classes in OCR TSX files | Remove |
 
 ---
 
 ## Files to Change
 
+### Chat (previously in scope)
 | File | Change |
 |------|--------|
-| `src/pages/sidepanel/index.css` | Define `--color-*` tokens; add `--chrome-*` aliases; delete dark-mode `@media` block; update `.sidebar-strip`, `.sidebar-icon-active` |
+| `src/pages/sidepanel/index.css` | Define `--color-*` tokens; add `--chrome-*` aliases; delete all dark/light `@media` blocks; update `.sidebar-strip`, `.sidebar-icon-active`; set `.debug-output` bg unconditionally dark; set code block bg unconditionally light |
 | `src/pages/sidepanel/components/layout/Sidebar.tsx` | Rail 44px; active = tint (no gradient/shadow); inactive = muted; remove text labels |
 | `src/pages/sidepanel/components/layout/ChatLayout.tsx` | Wire in `<ChatHeader />`; remove `font-['Inter'...]` class |
 | `src/pages/sidepanel/components/layout/ChatHeader.tsx` | Remove dark bg/blur/border; add gradient dot + dynamic title; no right buttons |
@@ -226,13 +286,36 @@ Only the visual presentation changes. All existing logic, contexts, and services
 | `src/pages/sidepanel/components/chat/ChatInput.tsx` | Remove Think/Deep Research; remove `border-t`; move selectors into chatbox; send button states |
 | `src/pages/sidepanel/components/shared/ToolbarDropdown.tsx` | Trigger + panel style; remove shadow; option row font-size |
 
+### Agent (expanded scope)
+| File | Change |
+|------|--------|
+| `src/pages/sidepanel/components/agent/AgentLayout.tsx` | Remove `font-['Inter'...]` |
+| `src/pages/sidepanel/components/agent/AgentInput.tsx` | Fix border radius; flat send button; remove `dark:` |
+| `src/pages/sidepanel/components/agent/AgentStepList.tsx` | Fix avatar bg; fix font sizes; remove `dark:` |
+| `src/pages/sidepanel/components/agent/AgentStepCard.tsx` | Fix font sizes; remove `dark:` if present |
+| `src/pages/sidepanel/components/agent/AgentWelcomeScreen.tsx` | Fix font sizes; fix border radius; remove shadow from icon badge; flat primary button; remove `dark:` |
+| `src/pages/sidepanel/components/agent/AgentHistoryPanel.tsx` | Fix font sizes; fix border radius; remove `dark:` |
+
+### Debug (expanded scope)
+| File | Change |
+|------|--------|
+| `src/pages/sidepanel/components/debug/DebugLayout.tsx` | Fix font sizes (`text-sm` → `text-[12px]`) |
+| `src/pages/sidepanel/index.css` (debug classes) | Remove shadow from `.debug-btn-run`; set `.debug-output` bg unconditionally `#1e1e1e`; delete dark-mode media blocks (covered globally) |
+
+### OCR (expanded scope)
+| File | Change |
+|------|--------|
+| `src/pages/sidepanel/components/ocr/OcrLayout.tsx` | Fix font sizes; remove `dark:` |
+| `src/pages/sidepanel/components/ocr/OcrDropZone.tsx` | Fix font sizes; remove `dark:` |
+| `src/pages/sidepanel/index.css` (ocr classes) | Fix borders (1px), border radii, remove shadows, remove `backdrop-filter`, remove dark image preview bg, flat screenshot button |
+
 ---
 
 ## Out of Scope
 
 - Dark mode
-- Agent, Debug, OCR layout-specific redesigns (token consistency via `--chrome-*` aliases + dark-mode block removal)
 - New features or behavioral changes
 - Options page redesign
 - Screenshot preview layout/controls (token border/radius only)
 - `ActiveTabSummary` and `SelectionContext` structural changes
+- Debug panel internal layout (11 tool panels — token consistency only via CSS class updates in `index.css`)
