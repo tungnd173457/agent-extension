@@ -52,14 +52,107 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
     const currentProviderLabel = settings.serviceProvider === 'webapp' ? 'ChatGPT' : 'Custom';
 
     return (
-        <div className="border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)] p-3 shrink-0">
+        <div className="bg-[var(--chrome-bg)] shrink-0" style={{ padding: '6px 10px 10px 10px' }}>
             {/* Active Tab Summary */}
             <ActiveTabSummary />
 
             {/* Toolbar above input */}
             <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
-                    {/* Service Provider Dropdown */}
+                    {/* Scissors (Screenshot) */}
+                    <button
+                        onClick={handleScreenshot}
+                        className="w-[26px] h-[26px] flex items-center justify-center rounded-[6px] border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+                        title="Screenshot selection"
+                    >
+                        <Scissors className="w-4 h-4" />
+                    </button>
+
+                    {/* Attachment (Visual only for now) */}
+                    <button
+                        className="w-[26px] h-[26px] flex items-center justify-center rounded-[6px] border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+                        title="Attach file"
+                    >
+                        <Paperclip className="w-4 h-4" />
+                    </button>
+
+                    {/* Library/Prompts (Visual only for now) */}
+                    <button
+                        className="w-[26px] h-[26px] flex items-center justify-center rounded-[6px] border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+                        title="Prompts"
+                    >
+                        <BookOpen className="w-4 h-4" />
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {/* History */}
+                    <button
+                        onClick={onToggleHistory}
+                        className="w-[26px] h-[26px] flex items-center justify-center rounded-[6px] border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+                        title="Chat History"
+                    >
+                        <History className="w-4 h-4" />
+                    </button>
+
+                    {/* New Chat */}
+                    <button
+                        onClick={startNewConversation}
+                        className="w-[26px] h-[26px] flex items-center justify-center rounded-[6px] border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+                        title="New Chat"
+                    >
+                        <Plus className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Chatbox */}
+            <div style={{
+                border: '1px solid var(--color-border)',
+                borderRadius: '10px',
+                padding: '9px 10px 7px 11px',
+                display: 'flex',
+                flexDirection: 'column',
+            }}>
+                {/* Screenshot preview */}
+                {screenshotImage && (
+                    <div style={{ borderRadius: '6px', border: '1px solid var(--color-border)', marginBottom: '6px', overflow: 'hidden' }}>
+                        <div className="relative inline-block group/img">
+                            <img
+                                src={screenshotImage}
+                                alt="Screenshot"
+                                className="max-h-[120px] max-w-full object-cover"
+                            />
+                            <button
+                                onClick={() => setScreenshotImage(null)}
+                                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover/img:opacity-100"
+                                title="Remove screenshot"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Textarea */}
+                <textarea
+                    className="text-[11px] resize-none outline-none w-full bg-transparent"
+                    style={{
+                        color: 'var(--color-text)',
+                        minHeight: '38px',
+                        marginBottom: '7px',
+                    }}
+                    placeholder="Ask anything, @ models, / prompts"
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    ref={textareaRef}
+                />
+
+                {/* Bottom row */}
+                <div className="flex items-center gap-[5px]">
+                    {/* Service selector — moved from toolbar row */}
                     <ToolbarDropdown
                         value={settings.serviceProvider || 'custom'}
                         label={currentProviderLabel}
@@ -74,117 +167,43 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
                         }}
                     />
 
-                    {/* Model Dropdown */}
-                    <ToolbarDropdown
-                        value={settings.chatModel}
-                        label={currentModelLabel}
-                        options={currentModels}
-                        onChange={setModel}
-                    />
-
-                    <div className="h-4 w-[1px] bg-[var(--chrome-border)]" />
-
-                    {/* Scissors (Screenshot) */}
-                    <button
-                        onClick={handleScreenshot}
-                        className="opacity-60 hover:opacity-100 transition-opacity"
-                        title="Screenshot selection"
-                    >
-                        <Scissors className="w-4 h-4" />
-                    </button>
-
-                    {/* Attachment (Visual only for now) */}
-                    <button
-                        className="opacity-60 hover:opacity-100 transition-opacity"
-                        title="Attach file"
-                    >
-                        <Paperclip className="w-4 h-4" />
-                    </button>
-
-                    {/* Library/Prompts (Visual only for now) */}
-                    <button
-                        className="opacity-60 hover:opacity-100 transition-opacity"
-                        title="Prompts"
-                    >
-                        <BookOpen className="w-4 h-4" />
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    {/* History */}
-                    <button
-                        onClick={onToggleHistory}
-                        className="opacity-60 hover:opacity-100 transition-opacity"
-                        title="Chat History"
-                    >
-                        <History className="w-4 h-4" />
-                    </button>
-
-                    {/* New Chat */}
-                    <button
-                        onClick={startNewConversation}
-                        className="w-6 h-6 rounded-lg bg-[var(--chrome-input-bg)] border border-[var(--chrome-border)] flex items-center justify-center text-[var(--chrome-text)] opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
-                        title="New Chat"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-
-            {/* Input Area */}
-            <div className="relative group bg-[var(--chrome-input-bg)] rounded-2xl border border-[var(--chrome-border)] focus-within:border-[var(--chrome-text)]/20 transition-all">
-                {/* Screenshot Preview */}
-                {screenshotImage && (
-                    <div className="px-3 pt-3">
-                        <div className="relative inline-block group/img">
-                            <img
-                                src={screenshotImage}
-                                alt="Screenshot"
-                                className="max-h-[120px] max-w-full rounded-lg border border-[var(--chrome-border)] object-cover shadow-sm"
-                            />
-                            <button
-                                onClick={() => setScreenshotImage(null)}
-                                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover/img:opacity-100"
-                                title="Remove screenshot"
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <textarea
-                    ref={textareaRef}
-                    value={text}
-                    onChange={e => setText(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={screenshotImage ? "Ask about this screenshot..." : "Ask anything, @ models, / prompts"}
-                    rows={1}
-                    className="w-full bg-transparent text-[var(--chrome-text)] text-sm resize-none outline-none placeholder:opacity-30 px-4 pt-4 pb-2 min-h-[80px] max-h-[150px] pr-10"
-                />
-
-                {/* Visual Bottom Actions inside input */}
-                <div className="flex justify-between items-center px-2 pb-2">
-                    <div className="flex gap-2">
-                        <button className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-[var(--chrome-border)] text-[10px] opacity-60 hover:opacity-100 transition-opacity">
-                            <span className="w-2 h-2 rounded-full border border-current opacity-60"></span>
-                            Think
-                        </button>
-                        <button className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-[var(--chrome-border)] text-[10px] opacity-60 hover:opacity-100 transition-opacity">
-                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-                            Deep Research
-                        </button>
+                    {/* Model selector — moved from toolbar row, add gradient dot */}
+                    <div className="flex items-center gap-1">
+                        <div style={{
+                            width: '10px', height: '10px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+                            flexShrink: 0,
+                        }} />
+                        <ToolbarDropdown
+                            value={settings.chatModel}
+                            label={currentModelLabel}
+                            options={currentModels}
+                            onChange={setModel}
+                        />
                     </div>
 
+                    {/* Send button */}
                     <button
+                        style={{
+                            marginLeft: 'auto',
+                            width: '26px', height: '26px',
+                            borderRadius: '50%',
+                            border: 'none',
+                            cursor: (!text.trim() && !screenshotImage) ? 'default' : 'pointer',
+                            background: (!text.trim() && !screenshotImage)
+                                ? 'var(--color-send-inactive)'
+                                : 'var(--color-primary)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0,
+                        }}
                         onClick={handleSend}
-                        disabled={(!text.trim() && !screenshotImage) || isStreaming}
-                        className="w-8 h-8 rounded-full bg-[var(--chrome-text)] text-[var(--chrome-bg)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all active:scale-95"
+                        disabled={!text.trim() && !screenshotImage && !isStreaming}
                     >
                         {isStreaming ? (
-                            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
-                            <svg className="w-4 h-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
+                            <svg className="w-4 h-4 translate-x-px" viewBox="0 0 24 24" fill="white">
                                 <path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405Z" />
                             </svg>
                         )}
