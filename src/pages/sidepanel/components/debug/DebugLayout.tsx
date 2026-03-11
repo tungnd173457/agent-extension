@@ -14,14 +14,14 @@ import AgentStatusPanel from './panels/AgentStatusPanel';
 
 const DebugLayout: React.FC = () => {
     return (
-        <div className="flex flex-col h-screen bg-[var(--chrome-bg)] text-[var(--chrome-text)] font-['Inter',system-ui,sans-serif] relative overflow-hidden">
+        <div className="flex flex-col h-screen bg-[var(--chrome-bg)] text-[var(--chrome-text)] relative overflow-hidden">
             {/* Header */}
             <div className="debug-header">
                 <div className="flex items-center gap-2">
                     <Bug className="w-4.5 h-4.5 text-[#f59e0b]" />
-                    <span className="text-sm font-semibold">Browser Agent Debugger</span>
+                    <span className="text-[12px] font-semibold">Browser Agent Debugger</span>
                 </div>
-                <span className="text-xs text-[var(--chrome-text-secondary)]">
+                <span className="text-[11px] text-[var(--chrome-text-secondary)]">
                     Inspect & test agent functions
                 </span>
             </div>
