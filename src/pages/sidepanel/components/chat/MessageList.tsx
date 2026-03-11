@@ -18,7 +18,7 @@ const MessageList: React.FC = () => {
     const showTypingIndicator = isStreaming && !hasStreamingMessage;
 
     return (
-        <div className="flex flex-col gap-1 p-4">
+        <div className="flex flex-col gap-[14px] p-3">
             {messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
             ))}
