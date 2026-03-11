@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "AnyTools",
+    "name": "Side Agent",
     "version": "1.2.0",
     "description": "Multi-tool Chrome Extension - Translate, Chat with AI, and more",
     "permissions": [
@@ -40,7 +40,7 @@
         "default_path": "src/pages/sidepanel/index.html"
     },
     "action": {
-        "default_title": "AnyTools - Toggle Chat"
+        "default_title": "Side Agent - Toggle Chat"
     },
     "options_page": "src/pages/options/index.html",
     "icons": {

@@ -8,7 +8,7 @@ let currentTarget: HTMLImageElement | null = null;
 
 function createPickButton(): HTMLDivElement {
     const btn = document.createElement('div');
-    btn.id = 'anytools-ocr-pick-btn';
+    btn.id = 'side-agent-ocr-pick-btn';
     btn.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -127,13 +127,13 @@ function onMouseOut(e: MouseEvent) {
 
     if (target.tagName === 'IMG') {
         // Don't hide if moving to the pick button
-        if (related && (related.id === 'anytools-ocr-pick-btn' || related.closest('#anytools-ocr-pick-btn'))) {
+        if (related && (related.id === 'side-agent-ocr-pick-btn' || related.closest('#side-agent-ocr-pick-btn'))) {
             return;
         }
         hidePickButton();
     }
     // If leaving the pick button and not going to an image
-    if (target.id === 'anytools-ocr-pick-btn' || target.closest('#anytools-ocr-pick-btn')) {
+    if (target.id === 'side-agent-ocr-pick-btn' || target.closest('#side-agent-ocr-pick-btn')) {
         if (related && related.tagName === 'IMG') {
             return;
         }
