@@ -1,21 +1,26 @@
 @import "tailwindcss";
 
 :root {
-    --chrome-bg: #ffffff;
-    --chrome-text: #202124;
-    --chrome-text-secondary: #5f6368;
-    --chrome-border: rgba(0, 0, 0, 0.12);
-    --chrome-input-bg: #ffffff;
-}
+    /* Design tokens */
+    --color-primary: #7c3aed;
+    --color-primary-light: #a78bfa;
+    --color-primary-tint: #f0ebff;
+    --color-bg: #ffffff;
+    --color-surface: #fafafa;
+    --color-border: #e0e0e0;
+    --color-border-light: #f0f0f0;
+    --color-text: #202124;
+    --color-text-secondary: #5f6368;
+    --color-text-muted: #9aa0a6;
+    --color-text-placeholder: #bbb;
+    --color-send-inactive: #9aa0a6;
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --chrome-bg: #202124;
-        --chrome-text: #e8eaed;
-        --chrome-text-secondary: #9aa0a6;
-        --chrome-border: rgba(255, 255, 255, 0.08);
-        --chrome-input-bg: rgba(255, 255, 255, 0.04);
-    }
+    /* Legacy aliases — keeps existing components working without file-by-file edits */
+    --chrome-bg: var(--color-bg);
+    --chrome-text: var(--color-text);
+    --chrome-text-secondary: var(--color-text-secondary);
+    --chrome-border: var(--color-border);
+    --chrome-input-bg: var(--color-bg);
 }
 
 body {
@@ -39,12 +44,6 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.2);
-}
-
-@media (prefers-color-scheme: dark) {
-    ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
 }
 
 /* Typing animation */
@@ -176,12 +175,6 @@ body {
     background: #1e1e1e;
 }
 
-@media (prefers-color-scheme: light) {
-    .msg-content .code-block-wrapper {
-        background: #f6f8fa;
-    }
-}
-
 .msg-content .code-lang {
     font-size: 11px;
     font-weight: 600;
@@ -210,12 +203,6 @@ body {
     color: #e5e7eb;
 }
 
-@media (prefers-color-scheme: light) {
-    .msg-content .code-block-wrapper pre code {
-        color: #24292e;
-    }
-}
-
 /* --- Inline code --- */
 .msg-content code.inline-code {
     background: rgba(0, 0, 0, 0.06);
@@ -224,12 +211,6 @@ body {
     border-radius: 4px;
     font-size: 12.5px;
     font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-    .msg-content code.inline-code {
-        background: rgba(255, 255, 255, 0.08);
-    }
 }
 
 /* --- Bold / Strong --- */
@@ -277,12 +258,6 @@ body {
     background: rgba(0, 0, 0, 0.03);
 }
 
-@media (prefers-color-scheme: dark) {
-    .msg-content th {
-        background: rgba(255, 255, 255, 0.05);
-    }
-}
-
 /* --- Horizontal rule --- */
 .msg-content hr {
     border: none;
@@ -321,12 +296,6 @@ body {
 
 .sidebar-item:hover {
     background: rgba(0, 0, 0, 0.05);
-}
-
-@media (prefers-color-scheme: dark) {
-    .sidebar-item:hover {
-        background: rgba(255, 255, 255, 0.06);
-    }
 }
 
 .sidebar-item-active {
@@ -397,32 +366,14 @@ body {
     transition: border-color 0.2s, background 0.2s;
 }
 
-@media (prefers-color-scheme: dark) {
-    .action-card {
-        background: rgba(255, 255, 255, 0.03);
-    }
-}
-
 .action-card-executing {
     border-color: rgba(124, 58, 237, 0.3);
     background: rgba(124, 58, 237, 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-    .action-card-executing {
-        background: rgba(124, 58, 237, 0.08);
-    }
-}
-
 .action-card-error {
     border-color: rgba(239, 68, 68, 0.3);
     background: rgba(239, 68, 68, 0.04);
-}
-
-@media (prefers-color-scheme: dark) {
-    .action-card-error {
-        background: rgba(239, 68, 68, 0.08);
-    }
 }
 
 .action-card-icon {
@@ -504,13 +455,6 @@ body {
     border-color: rgba(0, 0, 0, 0.2);
 }
 
-@media (prefers-color-scheme: dark) {
-    .agent-stop-btn:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-}
-
 /* ============================================================ */
 /* Agent Done Banner                                              */
 /* ============================================================ */
@@ -529,16 +473,6 @@ body {
 .agent-done-fail {
     border-color: rgba(239, 68, 68, 0.3);
     background: rgba(239, 68, 68, 0.05);
-}
-
-@media (prefers-color-scheme: dark) {
-    .agent-done-success {
-        background: rgba(16, 185, 129, 0.08);
-    }
-
-    .agent-done-fail {
-        background: rgba(239, 68, 68, 0.08);
-    }
 }
 
 /* ============================================================ */
@@ -595,12 +529,6 @@ body {
     background: rgba(245, 158, 11, 0.1);
     color: #f59e0b;
     flex-shrink: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-    .debug-panel-icon {
-        background: rgba(245, 158, 11, 0.15);
-    }
 }
 
 .debug-panel-info {
@@ -712,12 +640,6 @@ body {
     background: rgba(0, 0, 0, 0.05);
 }
 
-@media (prefers-color-scheme: dark) {
-    .debug-btn:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.08);
-    }
-}
-
 .debug-btn-active {
     background: rgba(245, 158, 11, 0.15);
     border-color: #f59e0b;
@@ -754,12 +676,6 @@ body {
     color: var(--chrome-text);
 }
 
-@media (prefers-color-scheme: dark) {
-    .debug-btn-icon:hover {
-        background: rgba(255, 255, 255, 0.08);
-    }
-}
-
 .debug-elapsed {
     font-size: 10px;
     color: var(--chrome-text-secondary);
@@ -767,12 +683,6 @@ body {
     padding: 2px 6px;
     border-radius: 4px;
     background: rgba(0, 0, 0, 0.04);
-}
-
-@media (prefers-color-scheme: dark) {
-    .debug-elapsed {
-        background: rgba(255, 255, 255, 0.06);
-    }
 }
 
 /* ---- Debug Output ---- */
@@ -784,12 +694,6 @@ body {
     max-height: 400px;
     overflow: auto;
     animation: debug-output-enter 0.2s ease-out;
-}
-
-@media (prefers-color-scheme: light) {
-    .debug-output {
-        background: #f6f8fa;
-    }
 }
 
 .debug-output-error {
@@ -805,12 +709,6 @@ body {
     white-space: pre-wrap;
     word-break: break-word;
     color: #e5e7eb;
-}
-
-@media (prefers-color-scheme: light) {
-    .debug-output-pre {
-        color: #24292e;
-    }
 }
 
 .debug-error-text {
@@ -861,25 +759,10 @@ body {
     color: #e5e7eb;
 }
 
-@media (prefers-color-scheme: light) {
-
-    .debug-table th,
-    .debug-table td {
-        border-color: var(--chrome-border);
-        color: #24292e;
-    }
-}
-
 .debug-table th {
     font-weight: 600;
     background: rgba(255, 255, 255, 0.05);
     color: #f59e0b;
-}
-
-@media (prefers-color-scheme: light) {
-    .debug-table th {
-        background: rgba(0, 0, 0, 0.03);
-    }
 }
 
 .debug-table-num {
@@ -984,12 +867,6 @@ body {
     background: #f3f4f6;
 }
 
-@media (prefers-color-scheme: dark) {
-    .ocr-preview-image-area {
-        background: #1a1a2e;
-    }
-}
-
 .ocr-preview-img {
     max-width: 100%;
     max-height: 320px;
@@ -1029,18 +906,6 @@ body {
     background: white;
 }
 
-@media (prefers-color-scheme: dark) {
-    .ocr-zoom-btn {
-        background: rgba(30, 30, 46, 0.9);
-        border-color: rgba(255, 255, 255, 0.1);
-        color: #e5e7eb;
-    }
-
-    .ocr-zoom-btn:hover {
-        background: rgba(40, 40, 60, 0.95);
-    }
-}
-
 /* ---- Preview Action Bar ---- */
 .ocr-preview-actions {
     display: flex;
@@ -1067,12 +932,6 @@ body {
 .ocr-action-btn:hover {
     background: rgba(0, 0, 0, 0.05);
     color: var(--chrome-text);
-}
-
-@media (prefers-color-scheme: dark) {
-    .ocr-action-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-    }
 }
 
 .ocr-action-btn:disabled {
@@ -1208,12 +1067,6 @@ body {
     color: var(--chrome-text);
 }
 
-@media (prefers-color-scheme: dark) {
-    .ocr-toolbar-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-    }
-}
-
 .ocr-toolbar-btn-active {
     color: #7c3aed;
 }
@@ -1235,8 +1088,3 @@ body {
     color: var(--chrome-text);
 }
 
-@media (prefers-color-scheme: dark) {
-    .ocr-toolbar-chat-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-    }
-}
