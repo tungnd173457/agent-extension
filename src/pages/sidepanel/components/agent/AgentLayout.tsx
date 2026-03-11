@@ -13,7 +13,7 @@ const AgentLayout: React.FC = () => {
     const hasContent = steps.length > 0 || taskDescription;
 
     return (
-        <div className="flex flex-col h-screen bg-[var(--chrome-bg)] text-[var(--chrome-text)] relative overflow-hidden">
+        <div className="flex flex-col h-screen bg-[var(--chrome-bg)] text-[var(--chrome-text)] font-['Inter',system-ui,sans-serif] relative overflow-hidden">
             {/* Error */}
             {error && <ErrorBanner message={error} onClose={clearError} />}
 

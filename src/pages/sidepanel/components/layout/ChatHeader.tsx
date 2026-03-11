@@ -1,40 +1,23 @@
 import React from 'react';
 import { useChatContext } from '../../context/ChatContext';
+import { Sparkles } from 'lucide-react';
 
-export function ChatHeader() {
+const ChatHeader: React.FC = () => {
     const { currentConversation } = useChatContext();
-    const title = currentConversation?.title || 'Side Agent';
 
     return (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '0 12px',
-            height: '40px',
-            borderBottom: '1px solid var(--color-border-light)',
-            background: 'var(--color-bg)',
-            flexShrink: 0,
-        }}>
-            <div style={{
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-                flexShrink: 0,
-            }} />
-            <span style={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: 'var(--color-text)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-            }}>
-                {title}
-            </span>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#0f0f10]/80 backdrop-blur-sm shrink-0">
+            {/* Title / Branding */}
+            <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/20">
+                    <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-medium text-white/90 truncate">
+                    {currentConversation?.title || 'Any Tools'}
+                </span>
+            </div>
         </div>
     );
-}
+};
 
 export default ChatHeader;

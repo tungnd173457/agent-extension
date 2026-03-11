@@ -37,6 +37,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange }) => {
                             <span className={`sidebar-icon ${isActive ? 'sidebar-icon-active' : ''}`}>
                                 {item.icon}
                             </span>
+                            <span className={`sidebar-label ${isActive ? 'sidebar-label-active' : ''}`}>
+                                {item.label}
+                            </span>
                         </button>
                     );
                 })}

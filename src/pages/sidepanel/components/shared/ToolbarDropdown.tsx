@@ -26,37 +26,19 @@ const ToolbarDropdown: React.FC<ToolbarDropdownProps> = ({ value, label, options
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen(o => !o)}
-                style={{
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    padding: '3px 7px',
-                    fontSize: '10px',
-                    color: 'var(--color-text)',
-                    background: 'var(--color-bg)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    whiteSpace: 'nowrap',
-                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--chrome-input-bg)] text-[var(--chrome-text)] text-xs rounded-full border border-[var(--chrome-border)] hover:bg-black/5 dark:hover:bg-white/5 outline-none cursor-pointer transition-colors whitespace-nowrap"
             >
                 <span>{label}</span>
                 <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
             </button>
 
             {open && (
-                <div
-                    className="absolute left-0 bottom-full mb-1.5 min-w-[120px] rounded-[8px] z-50 py-1 overflow-hidden"
-                    style={{
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg)',
-                    }}
-                >
+                <div className="absolute left-0 bottom-full mb-1.5 min-w-[120px] bg-[var(--chrome-bg)] border border-[var(--chrome-border)] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] z-50 py-1 overflow-hidden">
                     {options.map(opt => (
                         <button
                             key={opt.value}
                             onClick={() => { onChange(opt.value); setOpen(false); }}
-                            className={`w-full text-left px-3 py-2 text-[10px] whitespace-nowrap transition-colors ${opt.value === value ? 'bg-[var(--chrome-text)]/10 text-[var(--chrome-text)]' : 'text-[var(--chrome-text)] hover:bg-[var(--chrome-text)]/5'}`}
+                            className={`w-full text-left px-3 py-2 text-xs whitespace-nowrap transition-colors ${opt.value === value ? 'bg-[var(--chrome-text)]/10 text-[var(--chrome-text)]' : 'text-[var(--chrome-text)] hover:bg-[var(--chrome-text)]/5'}`}
                         >
                             {opt.label}
                         </button>

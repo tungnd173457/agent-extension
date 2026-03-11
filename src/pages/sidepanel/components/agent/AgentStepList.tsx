@@ -17,11 +17,11 @@ const AgentStepList: React.FC = () => {
             {/* User's task */}
             {taskDescription && (
                 <div className="flex gap-3 items-start">
-                    <div className="w-7 h-7 rounded-lg bg-[var(--color-surface)] flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[11px] font-semibold text-gray-600">You</span>
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">You</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[12px] leading-relaxed">{taskDescription}</p>
+                        <p className="text-sm leading-relaxed">{taskDescription}</p>
                     </div>
                 </div>
             )}
@@ -49,12 +49,12 @@ const AgentStepList: React.FC = () => {
                         ) : (
                             <XCircle className="w-4 h-4 text-red-400" />
                         )}
-                        <span className="text-[11px] font-medium">
+                        <span className="text-xs font-medium">
                             {doneResult.success ? 'Task completed successfully' : 'Task could not be completed'}
                         </span>
                     </div>
                     {doneResult.result && (
-                        <p className="text-[11px] opacity-70 pl-6 leading-relaxed">{doneResult.result}</p>
+                        <p className="text-xs opacity-70 pl-6 leading-relaxed">{doneResult.result}</p>
                     )}
                 </div>
             )}

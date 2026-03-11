@@ -56,12 +56,12 @@ const AgentHistoryPanel: React.FC<AgentHistoryPanelProps> = ({ onClose }) => {
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 shrink-0">
                 <div className="flex items-center gap-2">
-                    <h2 className="text-[13px] font-medium">Agent History</h2>
-                    <span className="opacity-40 text-[12px]">({conversations.length})</span>
+                    <h2 className="text-lg font-medium">Agent History</h2>
+                    <span className="opacity-40 text-sm">({conversations.length})</span>
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-1 rounded-[6px] opacity-40 hover:opacity-100 hover:bg-black/5 transition-colors"
+                    className="p-1 rounded-md opacity-40 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                 >
                     <X className="w-5 h-5" />
                 </button>
@@ -76,7 +76,7 @@ const AgentHistoryPanel: React.FC<AgentHistoryPanelProps> = ({ onClose }) => {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search tasks"
-                        className="w-full bg-[var(--chrome-input-bg)] text-[var(--chrome-text)] text-[12px] rounded-[6px] pl-9 pr-4 py-2 border border-transparent focus:border-violet-500/50 outline-none placeholder:opacity-30 transition-all"
+                        className="w-full bg-[var(--chrome-input-bg)] text-[var(--chrome-text)] text-sm rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-violet-500/50 outline-none placeholder:opacity-30 transition-all"
                     />
                 </div>
             </div>
@@ -84,14 +84,14 @@ const AgentHistoryPanel: React.FC<AgentHistoryPanelProps> = ({ onClose }) => {
             {/* Grouped List */}
             <div className="flex-1 overflow-y-auto px-2 py-2 thin-scrollbar">
                 {groupedConversations.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-40 opacity-30 text-[11px]">
+                    <div className="flex flex-col items-center justify-center h-40 opacity-30 text-xs">
                         <Bot className="w-8 h-8 mb-2 opacity-50" />
                         {search ? 'No results found' : 'No agent history yet'}
                     </div>
                 ) : (
                     groupedConversations.map(([group, items]) => (
                         <div key={group} className="mb-6">
-                            <div className="px-4 mb-2 text-[11px] font-medium opacity-40 uppercase tracking-wider">
+                            <div className="px-4 mb-2 text-xs font-medium opacity-40 uppercase tracking-wider">
                                 {group}
                             </div>
                             <div className="space-y-0.5">
@@ -99,16 +99,16 @@ const AgentHistoryPanel: React.FC<AgentHistoryPanelProps> = ({ onClose }) => {
                                     <div
                                         key={convo.id}
                                         onClick={() => { loadConversation(convo.id); onClose(); }}
-                                        className={`group relative flex items-start gap-3 px-4 py-3 rounded-[8px] cursor-pointer transition-colors ${convo.id === currentConversation?.id
-                                            ? 'bg-black/5'
-                                            : 'hover:bg-black/5'
+                                        className={`group relative flex items-start gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${convo.id === currentConversation?.id
+                                            ? 'bg-black/5 dark:bg-white/5'
+                                            : 'hover:bg-black/5 dark:hover:bg-white/5'
                                             }`}
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-[12px] font-medium opacity-90 truncate mb-0.5">
+                                            <div className="text-sm font-medium opacity-90 truncate mb-0.5">
                                                 {convo.title}
                                             </div>
-                                            <div className="flex items-center gap-2 text-[11px] opacity-40">
+                                            <div className="flex items-center gap-2 text-xs opacity-40">
                                                 <span>{convo.model}</span>
                                                 <span>·</span>
                                                 <span>{convo.steps.length} steps</span>
@@ -126,10 +126,10 @@ const AgentHistoryPanel: React.FC<AgentHistoryPanelProps> = ({ onClose }) => {
                                         </div>
 
                                         {/* Delete */}
-                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center gap-1 bg-[var(--chrome-bg)] border border-[var(--chrome-border)] pl-2 rounded-l-[8px] transition-opacity">
+                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center gap-1 bg-[var(--chrome-bg)] border border-[var(--chrome-border)] pl-2 rounded-l-lg transition-opacity">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
-                                                className="p-1.5 rounded-[6px] opacity-40 hover:text-red-400 hover:bg-red-500/10"
+                                                className="p-1.5 rounded-md opacity-40 hover:text-red-400 hover:bg-red-500/10"
                                                 title="Delete"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />

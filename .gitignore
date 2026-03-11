@@ -1,5 +1,4 @@
 node_modules
 dist
 .agent
-.superpowers/
-.claude
+test
