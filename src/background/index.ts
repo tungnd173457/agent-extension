@@ -13,4 +13,4 @@ import '../services/browser-agent/background.ts';
 // Import OCR module (service worker environment)
 import '../services/ocr/background.ts';
 
-console.log('AnyTools Background Service Worker Loaded');
+console.log('Side Agent Background Service Worker Loaded');

@@ -1,6 +1,6 @@
-# AnyTools - Multi-tool Chrome Extension
+# Side Agent - Multi-tool Chrome Extension
 
-AnyTools is a powerful, all-in-one productivity suite for your browser. It combines instant translation, AI-powered chat, and screen capture tools into a seamless, modern interface designed to enhance your workflow without leaving your current tab.
+Side Agent is a powerful, all-in-one productivity suite for your browser. It combines instant translation, AI-powered chat, and screen capture tools into a seamless, modern interface designed to enhance your workflow without leaving your current tab.
 
 ## 🚀 Key Features
 
@@ -19,9 +19,13 @@ AnyTools is a powerful, all-in-one productivity suite for your browser. It combi
 - **Rich Language Support**: Translate between 15+ languages including English, Vietnamese, Chinese, Japanese, French, and more.
 - **Modern UI**: Beautifully designed popup with smooth transitions and theme support.
 
-### 📸 Smart Screenshots (Scissors)
-- **Selection Capture**: Drag and drop to capture specific areas of your screen.
-- **AI Vision**: Send screenshots directly to the AI chat to ask questions about visual content.
+### 👁️ OCR Module
+- **Image Text Extraction**: Select images via drag-and-drop, file uploads, screenshots, or by hovering over images to extract text using OpenAI's Vision API.
+- **Text Actions**: Copy, edit, or send extracted text directly to the AI chat.
+
+### 🕵️ Browser Agent
+- **DOM Snapshot**: Serializes the current page's DOM into a cleaner, LLM-friendly format by filtering out invisible elements and redundant noise.
+- **Agent Tools**: Automate browser actions with tools such as element highlighting, link extraction, and programmatic scrolling.
 
 ---
 
@@ -44,8 +48,8 @@ AnyTools is a powerful, all-in-one productivity suite for your browser. It combi
 ### Setup
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-repo/any-tools.git
-   cd any-tools
+   git clone https://github.com/your-repo/side-agent.git
+   cd side-agent
    ```
 
 2. **Install dependencies**:
@@ -57,6 +61,7 @@ AnyTools is a powerful, all-in-one productivity suite for your browser. It combi
    ```bash
    npm run build
    ```
+   *For development with live reloading, use `npm run dev`.*
 
 4. **Load into Chrome**:
    - Open Chrome and navigate to `chrome://extensions/`
@@ -77,16 +82,18 @@ AnyTools is a powerful, all-in-one productivity suite for your browser. It combi
 ## 📂 Project Structure
 
 ```
-any-tools/
+side-agent/
 ├── public/              # Static assets & Manifest
 ├── src/
-│   ├── modules/
-│   │   ├── chat/        # AI Side Panel logic & UI
-│   │   └── translator/  # Content scripts & translation popup
+│   ├── services/
+│   │   ├── browser-agent/ # Browser automation & DOM serialization
+│   │   ├── chat/          # AI interactions & knowledge base
+│   │   ├── ocr/           # Image text extraction using Vision API
+│   │   └── translator/    # Content scripts & translation endpoints
 │   ├── shared/          # Constants, types, and utilities
 │   ├── background/      # Extension service worker
 │   ├── content/         # Global content scripts
-│   └── options/         # Settings page
+│   └── pages/           # Options settings and Sidepanel UI
 ├── vite.config.mjs      # Build configuration
 └── tsconfig.json        # TypeScript configuration
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "any-tools",
+  "name": "side-agent",
   "version": "1.0.0",
   "description": "Multi-tool Chrome Extension",
   "scripts": {

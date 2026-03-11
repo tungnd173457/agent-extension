@@ -3,7 +3,7 @@ import { useChatContext } from '../../context/ChatContext';
 
 export function ChatHeader() {
     const { currentConversation } = useChatContext();
-    const title = currentConversation?.title || 'Any Tools';
+    const title = currentConversation?.title || 'Side Agent';
 
     return (
         <div style={{
