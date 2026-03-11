@@ -72,14 +72,14 @@ const OcrDropZone: React.FC<OcrDropZoneProps> = ({ onImageSelected }) => {
                     <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
             </div>
-            <p className="text-sm font-medium text-[var(--chrome-text)]">
+            <p className="text-[12px] font-medium text-[var(--chrome-text)]">
                 Click to upload or drop an image here to extract text
             </p>
-            <p className="text-xs text-[var(--chrome-text-secondary)] mt-1">
+            <p className="text-[11px] text-[var(--chrome-text-secondary)] mt-1">
                 Max size: 5MB
             </p>
             {error && (
-                <p className="text-xs text-red-500 mt-2">{error}</p>
+                <p className="text-[11px] text-red-500 mt-2">{error}</p>
             )}
         </div>
     );

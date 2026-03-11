@@ -79,12 +79,12 @@ const OcrLayout: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-screen bg-[var(--chrome-bg)] text-[var(--chrome-text)] font-['Inter',system-ui,sans-serif] overflow-hidden">
+        <div className="flex flex-col h-screen bg-[var(--chrome-bg)] text-[var(--chrome-text)] overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--chrome-border)] shrink-0">
-                <h1 className="text-base font-bold tracking-tight">OCR</h1>
+                <h1 className="text-[13px] font-bold tracking-tight">OCR</h1>
                 <button
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-black/5 transition-colors"
                     title="Menu"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -100,7 +100,7 @@ const OcrLayout: React.FC = () => {
                 {status === 'idle' && (
                     <>
                         <OcrDropZone onImageSelected={handleImageSelected} />
-                        <div className="text-center text-xs text-[var(--chrome-text-secondary)]">or</div>
+                        <div className="text-center text-[11px] text-[var(--chrome-text-secondary)]">or</div>
                         <button
                             onClick={handleScreenshot}
                             className="ocr-screenshot-btn"
@@ -126,7 +126,7 @@ const OcrLayout: React.FC = () => {
                 )}
 
                 {status === 'error' && errorMsg && (
-                    <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs">
+                    <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-[11px]">
                         {errorMsg}
                     </div>
                 )}
