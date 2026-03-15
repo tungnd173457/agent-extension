@@ -17,6 +17,8 @@ import { LoopDetector } from './loop-detector';
 import { MessageManager } from './message-manager';
 import { extractBrowserState, getRawPageText } from './state-extractor';
 import { handleBrowserAgentAction } from '../tools';
+import { NetworkIdleTracker } from './network-idle-tracker';
+import { waitForPageStable, captureFingerprint } from './page-stability';
 import OpenAI from 'openai';
 
 // ============================================================
@@ -28,6 +30,7 @@ export class BrowserAgentRunner {
     private state: AgentState;
     private loopDetector: LoopDetector;
     private messageManager: MessageManager;
+    private networkTracker: NetworkIdleTracker;
 
     constructor(config: AgentConfig) {
         this.config = {
@@ -46,6 +49,7 @@ export class BrowserAgentRunner {
 
         this.loopDetector = new LoopDetector(this.config.loopDetectionWindow);
         this.messageManager = new MessageManager(this.config.task, this.config.maxActionsPerStep);
+        this.networkTracker = new NetworkIdleTracker();
     }
 
     /** Get the task ID */
@@ -69,6 +73,28 @@ export class BrowserAgentRunner {
         return !this.state.stopped && this.state.nSteps < this.config.maxSteps;
     }
 
+    /**
+     * Check if a specific action may trigger a page change (navigation or SPA update).
+     */
+    private isPageChangingAction(toolName: string, params: Record<string, any>): boolean {
+        if (['click-element', 'go-back', 'select-dropdown-option'].includes(toolName)) return true;
+        if (toolName === 'type-text' && params.pressEnter === true) return true;
+        if (toolName === 'send-keys' && typeof params.keys === 'string' && params.keys.includes('Enter')) return true;
+        return false;
+    }
+
+    /**
+     * Check if any action in the list may trigger a page change.
+     */
+    private wasPageChangingAction(actions: AgentAction[]): boolean {
+        return actions.some(action => {
+            const entries = Object.entries(action);
+            if (entries.length === 0) return false;
+            const [toolName, params] = entries[0];
+            return this.isPageChangingAction(toolName, params);
+        });
+    }
+
     // ============================================================
     // Main Loop
     // ============================================================
@@ -83,6 +109,12 @@ export class BrowserAgentRunner {
         let finalSuccess = false;
 
         try {
+            // Start tracking network requests for the active tab
+            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (activeTab?.id) {
+                this.networkTracker.start(activeTab.id);
+            }
+
             while (this.state.nSteps < this.config.maxSteps && !this.state.stopped) {
                 const stepInfo: AgentStepInfo = {
                     stepNumber: this.state.nSteps,
@@ -144,8 +176,37 @@ export class BrowserAgentRunner {
                     // ═══════════════════════════════════════
                     // Phase 3: Execute actions
                     // ═══════════════════════════════════════
+
+                    // Capture pre-action DOM fingerprint for stability detection
+                    let preActionFingerprint = '';
+                    if (this.wasPageChangingAction(brain.action)) {
+                        const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                        if (currentTab?.id) {
+                            preActionFingerprint = await captureFingerprint(currentTab.id);
+                            this.networkTracker.resetPending();
+                        }
+                    }
+
                     const results = await this.executeActions(brain.action);
                     this.state.lastResult = results;
+
+                    // Wait for page stability after page-changing actions
+                    if (preActionFingerprint) {
+                        const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                        if (currentTab?.id) {
+                            const stabilityResult = await waitForPageStable(
+                                currentTab.id,
+                                this.networkTracker,
+                                preActionFingerprint,
+                                {
+                                    networkQuietMs: this.config.networkQuietMs,
+                                    domConfirmMs: this.config.domConfirmMs,
+                                    maxTimeoutMs: this.config.stabilityTimeoutMs,
+                                },
+                            );
+                            console.log(`⏳ Page stability: stable=${stabilityResult.stable}, changed=${stabilityResult.changed}, duration=${stabilityResult.durationMs}ms`);
+                        }
+                    }
 
                     // Record actions for loop detection
                     for (const action of brain.action) {
@@ -221,6 +282,8 @@ export class BrowserAgentRunner {
         } catch (fatalError: any) {
             console.error(`💀 Fatal agent error:`, fatalError.message);
             this.emitEvent('agent:error', { error: fatalError.message, fatal: true });
+        } finally {
+            this.networkTracker.stop();
         }
 
         // If stopped or max steps without done, emit stopped
@@ -359,11 +422,23 @@ export class BrowserAgentRunner {
 
                 console.log(`  ↳ [${toolName}] ${agentResult.error ? '❌ ' + agentResult.error : '✓ ' + (agentResult.description ?? 'OK')}`);
 
-                // If page might have changed (navigate, click), wait briefly before next action
-                const pageChangingTools = ['navigate', 'go-back', 'click-element'];
-                if (pageChangingTools.includes(toolName) && i < actions.length - 1) {
-                    // Small delay to let the page settle
-                    await new Promise(r => setTimeout(r, 500));
+                // If page might have changed, wait for stability before next action
+                if (this.isPageChangingAction(toolName, params) && i < actions.length - 1) {
+                    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                    if (currentTab?.id) {
+                        const midFingerprint = await captureFingerprint(currentTab.id);
+                        this.networkTracker.resetPending();
+                        await waitForPageStable(
+                            currentTab.id,
+                            this.networkTracker,
+                            midFingerprint,
+                            {
+                                networkQuietMs: this.config.networkQuietMs,
+                                domConfirmMs: this.config.domConfirmMs,
+                                maxTimeoutMs: this.config.stabilityTimeoutMs,
+                            },
+                        );
+                    }
                 }
 
             } catch (error: any) {
