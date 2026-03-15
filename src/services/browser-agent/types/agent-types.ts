@@ -30,6 +30,12 @@ export interface AgentConfig {
     compactEveryNSteps?: number;
     /** Char threshold to trigger compaction */
     compactTriggerChars?: number;
+    /** Network quiet period before declaring idle (ms) */
+    networkQuietMs?: number;
+    /** Extra wait if DOM unchanged after network idle (ms) */
+    domConfirmMs?: number;
+    /** Max total wait for page stability (ms) */
+    stabilityTimeoutMs?: number;
 }
 
 export const DEFAULT_AGENT_CONFIG: Required<Omit<AgentConfig, 'task' | 'apiKey'>> = {
@@ -43,6 +49,9 @@ export const DEFAULT_AGENT_CONFIG: Required<Omit<AgentConfig, 'task' | 'apiKey'>
     enableCompaction: true,
     compactEveryNSteps: 15,
     compactTriggerChars: 40000,
+    networkQuietMs: 500,
+    domConfirmMs: 500,
+    stabilityTimeoutMs: 8000,
 };
 
 // ============================================================
