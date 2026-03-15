@@ -388,6 +388,16 @@ export class BrowserAgentRunner {
 
             // Dispatch to existing tools
             try {
+                // Capture pre-action fingerprint for inter-action stability wait
+                let interActionFingerprint = '';
+                if (this.isPageChangingAction(toolName, params) && i < actions.length - 1) {
+                    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                    if (currentTab?.id) {
+                        interActionFingerprint = await captureFingerprint(currentTab.id);
+                        this.networkTracker.resetPending();
+                    }
+                }
+
                 const toolResult = await handleBrowserAgentAction({
                     tool: toolName as any,
                     params,
@@ -423,15 +433,13 @@ export class BrowserAgentRunner {
                 console.log(`  ↳ [${toolName}] ${agentResult.error ? '❌ ' + agentResult.error : '✓ ' + (agentResult.description ?? 'OK')}`);
 
                 // If page might have changed, wait for stability before next action
-                if (this.isPageChangingAction(toolName, params) && i < actions.length - 1) {
+                if (interActionFingerprint) {
                     const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
                     if (currentTab?.id) {
-                        const midFingerprint = await captureFingerprint(currentTab.id);
-                        this.networkTracker.resetPending();
                         await waitForPageStable(
                             currentTab.id,
                             this.networkTracker,
-                            midFingerprint,
+                            interActionFingerprint,
                             {
                                 networkQuietMs: this.config.networkQuietMs,
                                 domConfirmMs: this.config.domConfirmMs,
