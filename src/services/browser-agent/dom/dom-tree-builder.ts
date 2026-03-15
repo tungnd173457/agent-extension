@@ -30,6 +30,14 @@ export function buildDOMTree(options: {
         pagesBelow: number;
     };
 } {
+    // Clear stale data-ba-idx attributes from previous runs.
+    // On SPAs, old elements persist in the DOM with outdated indices.
+    // querySelector('[data-ba-idx="N"]') could return the wrong element
+    // if multiple elements share the same index from different runs.
+    document.querySelectorAll('[data-ba-idx]').forEach(el => {
+        el.removeAttribute('data-ba-idx');
+    });
+
     const maxDepth = options.maxDepth ?? 100;
     const viewportExpansion = options.viewportExpansion ?? 1000; // px beyond viewport to include
 
