@@ -26,19 +26,23 @@ const ToolbarDropdown: React.FC<ToolbarDropdownProps> = ({ value, label, options
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen(o => !o)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--chrome-input-bg)] text-[var(--chrome-text)] text-xs rounded-full border border-[var(--chrome-border)] hover:bg-black/5 dark:hover:bg-white/5 outline-none cursor-pointer transition-colors whitespace-nowrap"
+                className="toolbar-pill cursor-pointer"
             >
                 <span>{label}</span>
-                <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />
+                <ChevronDown className={`w-3 h-3 opacity-50 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
             </button>
 
             {open && (
-                <div className="absolute left-0 bottom-full mb-1.5 min-w-[120px] bg-[var(--chrome-bg)] border border-[var(--chrome-border)] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] z-50 py-1 overflow-hidden">
+                <div className="absolute left-0 bottom-full mb-1.5 min-w-[140px] dropdown-glass z-50 py-1" style={{ animation: 'fadeInUp 0.15s ease-out' }}>
                     {options.map(opt => (
                         <button
                             key={opt.value}
                             onClick={() => { onChange(opt.value); setOpen(false); }}
-                            className={`w-full text-left px-3 py-2 text-xs whitespace-nowrap transition-colors ${opt.value === value ? 'bg-[var(--chrome-text)]/10 text-[var(--chrome-text)]' : 'text-[var(--chrome-text)] hover:bg-[var(--chrome-text)]/5'}`}
+                            className={`w-full text-left px-3 py-2 text-xs whitespace-nowrap transition-all cursor-pointer ${
+                                opt.value === value
+                                    ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-medium'
+                                    : 'text-[var(--chrome-text)] hover:bg-[var(--accent-subtle)] hover:text-[var(--chrome-text)]'
+                            }`}
                         >
                             {opt.label}
                         </button>

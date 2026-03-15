@@ -52,7 +52,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
     const currentProviderLabel = settings.serviceProvider === 'webapp' ? 'ChatGPT' : 'Custom';
 
     return (
-        <div className="border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)] p-3 shrink-0">
+        <div className="border-t border-[var(--glass-border)] bg-[var(--chrome-bg)] p-3 shrink-0">
             {/* Active Tab Summary */}
             <ActiveTabSummary />
 
@@ -82,39 +82,39 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
                         onChange={setModel}
                     />
 
-                    <div className="h-4 w-[1px] bg-[var(--chrome-border)]" />
+                    <div className="h-4 w-[1px] bg-[var(--glass-border)]" />
 
                     {/* Scissors (Screenshot) */}
                     <button
                         onClick={handleScreenshot}
-                        className="opacity-60 hover:opacity-100 transition-opacity"
+                        className="p-1.5 rounded-lg text-[var(--chrome-text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all cursor-pointer"
                         title="Screenshot selection"
                     >
                         <Scissors className="w-4 h-4" />
                     </button>
 
-                    {/* Attachment (Visual only for now) */}
+                    {/* Attachment */}
                     <button
-                        className="opacity-60 hover:opacity-100 transition-opacity"
+                        className="p-1.5 rounded-lg text-[var(--chrome-text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all cursor-pointer"
                         title="Attach file"
                     >
                         <Paperclip className="w-4 h-4" />
                     </button>
 
-                    {/* Library/Prompts (Visual only for now) */}
+                    {/* Prompts */}
                     <button
-                        className="opacity-60 hover:opacity-100 transition-opacity"
+                        className="p-1.5 rounded-lg text-[var(--chrome-text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all cursor-pointer"
                         title="Prompts"
                     >
                         <BookOpen className="w-4 h-4" />
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     {/* History */}
                     <button
                         onClick={onToggleHistory}
-                        className="opacity-60 hover:opacity-100 transition-opacity"
+                        className="p-1.5 rounded-lg text-[var(--chrome-text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all cursor-pointer"
                         title="Chat History"
                     >
                         <History className="w-4 h-4" />
@@ -123,7 +123,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
                     {/* New Chat */}
                     <button
                         onClick={startNewConversation}
-                        className="w-6 h-6 rounded-lg bg-[var(--chrome-input-bg)] border border-[var(--chrome-border)] flex items-center justify-center text-[var(--chrome-text)] opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+                        className="w-7 h-7 rounded-lg bg-[var(--accent-subtle)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white hover:border-transparent transition-all cursor-pointer"
                         title="New Chat"
                     >
                         <Plus className="w-4 h-4" />
@@ -132,7 +132,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
             </div>
 
             {/* Input Area */}
-            <div className="relative group bg-[var(--chrome-input-bg)] rounded-2xl border border-[var(--chrome-border)] focus-within:border-[var(--chrome-text)]/20 transition-all">
+            <div className="input-glass relative group">
                 {/* Screenshot Preview */}
                 {screenshotImage && (
                     <div className="px-3 pt-3">
@@ -140,11 +140,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
                             <img
                                 src={screenshotImage}
                                 alt="Screenshot"
-                                className="max-h-[120px] max-w-full rounded-lg border border-[var(--chrome-border)] object-cover shadow-sm"
+                                className="max-h-[120px] max-w-full rounded-xl border border-[var(--glass-border)] object-cover shadow-sm"
                             />
                             <button
                                 onClick={() => setScreenshotImage(null)}
-                                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover/img:opacity-100"
+                                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[var(--error)] text-white flex items-center justify-center shadow-md hover:brightness-110 transition-all opacity-0 group-hover/img:opacity-100 cursor-pointer"
                                 title="Remove screenshot"
                             >
                                 <X className="w-3 h-3" />
@@ -160,17 +160,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
                     onKeyDown={handleKeyDown}
                     placeholder={screenshotImage ? "Ask about this screenshot..." : "Ask anything, @ models, / prompts"}
                     rows={1}
-                    className="w-full bg-transparent text-[var(--chrome-text)] text-sm resize-none outline-none placeholder:opacity-30 px-4 pt-4 pb-2 min-h-[80px] max-h-[150px] pr-10"
+                    className="w-full bg-transparent text-[var(--chrome-text)] text-sm resize-none outline-none placeholder:text-[var(--chrome-text-secondary)] placeholder:opacity-40 px-4 pt-4 pb-2 min-h-[80px] max-h-[150px] pr-12"
                 />
 
-                {/* Visual Bottom Actions inside input */}
-                <div className="flex justify-between items-center px-2 pb-2">
+                {/* Bottom Actions inside input */}
+                <div className="flex justify-between items-center px-3 pb-3">
                     <div className="flex gap-2">
-                        <button className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-[var(--chrome-border)] text-[10px] opacity-60 hover:opacity-100 transition-opacity">
+                        <button className="toolbar-pill !py-1 !px-3 !text-[10px] cursor-pointer">
                             <span className="w-2 h-2 rounded-full border border-current opacity-60"></span>
                             Think
                         </button>
-                        <button className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-[var(--chrome-border)] text-[10px] opacity-60 hover:opacity-100 transition-opacity">
+                        <button className="toolbar-pill !py-1 !px-3 !text-[10px] cursor-pointer">
                             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
                             Deep Research
                         </button>
@@ -179,10 +179,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ onToggleHistory }) => {
                     <button
                         onClick={handleSend}
                         disabled={(!text.trim() && !screenshotImage) || isStreaming}
-                        className="w-8 h-8 rounded-full bg-[var(--chrome-text)] text-[var(--chrome-bg)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all active:scale-95"
+                        className="send-btn w-8 h-8"
                     >
                         {isStreaming ? (
-                            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
                             <svg className="w-4 h-4 translate-x-px" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405Z" />

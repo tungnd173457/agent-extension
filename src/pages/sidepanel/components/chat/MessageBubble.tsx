@@ -13,9 +13,6 @@ function formatTime(ts: number): string {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-/**
- * Map a model value (e.g. "gpt-4.1-mini") to the icon filename in /icons/.
- */
 function getModelIcon(model?: string): string | null {
     if (!model) return null;
     if (model.startsWith('gpt-4.1')) return 'icons/gpt-4.1.svg';
@@ -25,11 +22,6 @@ function getModelIcon(model?: string): string | null {
     return null;
 }
 
-/**
- * Map a model value to a human-readable display name using the constants.
- * Uses prefix matching so API-returned names like "gpt-4o-mini-2024-07-18"
- * correctly resolve to "GPT-4o Mini".
- */
 function getModelDisplayName(model?: string): string {
     if (!model) return 'AI';
     const allModels = [...CUSTOM_MODELS, ...WEBAPP_MODELS];
@@ -44,7 +36,6 @@ function getModelDisplayName(model?: string): string {
 // ─── Markdown custom components ───────────────────────────────────────────────
 
 const MarkdownComponents: Record<string, React.FC<any>> = {
-    // Code blocks & inline code
     code({ inline, className, children, ...props }: any) {
         const match = /language-(\w+)/.exec(className || '');
         const lang = match ? match[1] : '';
@@ -69,7 +60,6 @@ const MarkdownComponents: Record<string, React.FC<any>> = {
         );
     },
 
-    // Make links open in new tab
     a({ children, href, ...props }: any) {
         return (
             <a href={href} target="_blank" rel="noreferrer" {...props}>
@@ -89,18 +79,18 @@ const ImagePreview: React.FC<{ src: string }> = ({ src }) => {
             <img
                 src={src}
                 alt="Screenshot"
-                className="max-w-full max-h-[200px] rounded-lg border border-white/10 object-cover cursor-pointer hover:opacity-90 transition-opacity shadow-sm mb-2"
+                className="max-w-full max-h-[200px] rounded-xl border border-[var(--glass-border)] object-cover cursor-pointer hover:opacity-90 transition-opacity shadow-sm mb-2"
                 onClick={() => setExpanded(true)}
             />
             {expanded && (
                 <div
-                    className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center cursor-pointer backdrop-blur-sm"
+                    className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center cursor-pointer backdrop-blur-md"
                     onClick={() => setExpanded(false)}
                 >
                     <img
                         src={src}
                         alt="Screenshot expanded"
-                        className="max-w-[90%] max-h-[90%] rounded-xl shadow-2xl object-contain"
+                        className="max-w-[90%] max-h-[90%] rounded-2xl shadow-2xl object-contain"
                     />
                 </div>
             )}
@@ -112,7 +102,7 @@ const ContextBox: React.FC<{ text: string }> = ({ text }) => {
     const [expanded, setExpanded] = useState(false);
     return (
         <div
-            className="mb-2 max-w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-2 text-[13px] text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-all dropdown-shadow"
+            className="mb-2 max-w-full glass-card px-3 py-2 text-[13px] text-[var(--chrome-text-secondary)] cursor-pointer hover:border-[var(--accent)]/20 transition-all"
             onClick={() => setExpanded(!expanded)}
             title="Click to expand/collapse"
         >
@@ -134,14 +124,14 @@ const PageContextBox: React.FC<{ title: string; url: string; favicon: string; co
     }
 
     return (
-        <div className="mb-2 w-full max-w-[250px] rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 p-3 text-[13px] text-gray-700 dark:text-gray-300 dropdown-shadow flex flex-col gap-2 cursor-pointer hover:bg-black/10 dark:hover:bg-white/20 transition-all"
+        <div className="mb-2 w-full max-w-[250px] glass-card p-3 text-[13px] text-[var(--chrome-text-secondary)] flex flex-col gap-2 cursor-pointer transition-all"
             onClick={() => setExpanded(!expanded)}
         >
             <div className="flex items-center gap-2">
                 {favicon ? (
-                    <img src={favicon} className="w-5 h-5 rounded-sm flex-shrink-0 object-contain bg-white/50" alt="" />
+                    <img src={favicon} className="w-5 h-5 rounded-md flex-shrink-0 object-contain bg-white/50" alt="" />
                 ) : (
-                    <Globe className="w-5 h-5 text-[#8b5cf6]" />
+                    <Globe className="w-5 h-5 text-[var(--accent)]" />
                 )}
                 <div className="flex flex-col overflow-hidden w-full">
                     <span className="font-medium text-[var(--chrome-text)] truncate w-full" title={title}>{title}</span>
@@ -149,7 +139,7 @@ const PageContextBox: React.FC<{ title: string; url: string; favicon: string; co
                         href={url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] opacity-60 hover:text-[#8b5cf6] hover:opacity-100 truncate w-full transition-colors flex items-center justify-start"
+                        className="text-[11px] text-[var(--chrome-text-secondary)] hover:text-[var(--accent)] truncate w-full transition-colors flex items-center justify-start"
                         onClick={(e) => e.stopPropagation()}
                         title={url}
                     >
@@ -158,7 +148,7 @@ const PageContextBox: React.FC<{ title: string; url: string; favicon: string; co
                 </div>
             </div>
             {expanded && (
-                <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 text-[12px] opacity-80 whitespace-pre-wrap break-words max-h-[200px] overflow-y-auto custom-scrollbar">
+                <div className="mt-2 pt-2 border-t border-[var(--glass-border)] text-[12px] opacity-80 whitespace-pre-wrap break-words max-h-[200px] overflow-y-auto">
                     <div className="line-clamp-[10]">{content}</div>
                 </div>
             )}
@@ -195,11 +185,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
     if (isUser) {
         return (
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end mb-4" style={{ animation: 'fadeInUp 0.3s ease-out' }}>
                 <div className="max-w-[85%] flex flex-col items-end text-left w-full">
                     {contextText && <ContextBox text={contextText} />}
                     {pageContext && <PageContextBox {...pageContext} />}
-                    <div className="bg-[#f0f0f0] dark:bg-[#2f2f2f] text-black dark:text-white rounded-2xl px-4 py-2.5 text-[14px] leading-relaxed shadow-sm self-end">
+                    <div className="user-bubble rounded-2xl px-4 py-2.5 text-[14px] leading-relaxed self-end">
                         {message.imageUrl && (
                             <ImagePreview src={message.imageUrl} />
                         )}
@@ -214,7 +204,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         );
     }
 
-    // AI message — full width, left-aligned, content flush with icon
+    // AI message — full width, left-aligned
     const modelName = getModelDisplayName(message.model);
     const modelIconPath = getModelIcon(message.model);
 
@@ -227,25 +217,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                         <img
                             src={chrome.runtime.getURL(modelIconPath)}
                             alt={modelName}
-                            className="w-[18px] h-[18px] rounded-full object-contain"
+                            className="w-[20px] h-[20px] rounded-full object-contain ring-1 ring-[var(--glass-border)]"
                         />
                     ) : (
-                        <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center">
-                            <span className="text-[8px] text-white font-medium">AI</span>
+                        <div className="w-[20px] h-[20px] rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-sm">
+                            <span className="text-[8px] text-white font-semibold">AI</span>
                         </div>
                     )}
                 </div>
-                <span className="text-[14px] font-light text-[var(--chrome-text)]">{modelName}</span>
+                <span className="text-[13px] font-medium text-[var(--chrome-text)]">{modelName}</span>
                 {!message.isStreaming && (
-                    <span className="text-[10px] opacity-30 mt-0.5">{formatTime(message.timestamp)}</span>
+                    <span className="text-[10px] text-[var(--chrome-text-secondary)] mt-0.5">{formatTime(message.timestamp)}</span>
                 )}
                 {message.isStreaming && (
-                    <span className="text-[10px] opacity-40 animate-pulse mt-0.5">Đang trả lời…</span>
+                    <span className="text-[10px] text-[var(--accent)] animate-pulse mt-0.5 font-medium">Đang trả lời…</span>
                 )}
             </div>
 
-            {/* Content: flush left, rendered with react-markdown */}
-            <div className="msg-content text-[var(--chrome-text)] text-[14px] leading-[1.6]">
+            {/* Content */}
+            <div className="msg-content text-[var(--chrome-text)] text-[14px] leading-[1.7]">
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={MarkdownComponents}

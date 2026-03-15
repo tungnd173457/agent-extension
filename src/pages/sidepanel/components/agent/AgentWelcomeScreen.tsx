@@ -19,11 +19,13 @@ const AgentWelcomeScreen: React.FC = () => {
             <div className="px-6 pb-10 max-w-2xl mx-auto w-full flex flex-col items-start">
                 {/* Agent branding */}
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg ring-2 ring-[var(--accent)]/20">
                         <Bot className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-semibold opacity-90">Browser Agent</h1>
+                        <h1 className="text-2xl font-semibold">
+                            <span className="gradient-text">Browser Agent</span>
+                        </h1>
                         <p className="text-xs text-[var(--chrome-text-secondary)] mt-0.5">Automate any browser task</p>
                     </div>
                 </div>
@@ -38,12 +40,13 @@ const AgentWelcomeScreen: React.FC = () => {
                         <button
                             key={i}
                             onClick={() => startAgent(s.text)}
-                            className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-[var(--chrome-border)] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] hover:border-violet-300 dark:hover:border-violet-500/30 transition-all text-xs text-left group"
+                            className="glass-card flex items-center gap-2.5 px-4 py-3 text-xs text-left group cursor-pointer !rounded-xl"
+                            style={{ animationDelay: `${i * 0.05}s`, animation: 'fadeInUp 0.3s ease-out backwards' }}
                         >
-                            <span className="text-[var(--chrome-text-secondary)] group-hover:text-violet-500 transition-colors">
+                            <span className="text-[var(--chrome-text-secondary)] group-hover:text-[var(--accent)] transition-colors">
                                 {s.icon}
                             </span>
-                            <span className="opacity-70 group-hover:opacity-100 transition-opacity">{s.text}</span>
+                            <span className="text-[var(--chrome-text-secondary)] group-hover:text-[var(--chrome-text)] transition-colors">{s.text}</span>
                         </button>
                     ))}
                 </div>

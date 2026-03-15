@@ -45,7 +45,6 @@ const ActiveTabSummary: React.FC = () => {
     const handleSummarize = () => {
         if (!tabInfo.id) return;
 
-        // Ensure we don't try to inject into protected chrome:// urls
         if (tabInfo.url && (tabInfo.url.startsWith('chrome://') || tabInfo.url.startsWith('edge://'))) {
             sendMessage(`Please summarize this page: ${tabInfo.title || 'the current page'}\n(Note: extensions cannot read chrome:// pages directly.)`);
             return;
@@ -67,12 +66,12 @@ const ActiveTabSummary: React.FC = () => {
     if (!tabInfo.title || (tabInfo.url?.startsWith('chrome://newtab'))) return null;
 
     return (
-        <div className="flex items-center justify-between px-3 py-2 mb-3 bg-[var(--chrome-bg)] border border-[var(--chrome-border)] rounded-2xl shadow-sm hover:shadow-md transition-shadow max-w-full">
+        <div className="glass-card flex items-center justify-between px-3 py-2 mb-3 max-w-full">
             <div className="flex items-center gap-2 overflow-hidden flex-1 mr-2">
                 {tabInfo.favIconUrl ? (
-                    <img src={tabInfo.favIconUrl} className="w-4 h-4 rounded-sm flex-shrink-0" alt="" />
+                    <img src={tabInfo.favIconUrl} className="w-4 h-4 rounded-md flex-shrink-0" alt="" />
                 ) : (
-                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded-sm flex-shrink-0" />
+                    <div className="w-4 h-4 bg-[var(--accent-subtle)] rounded-md flex-shrink-0" />
                 )}
                 <span className="text-sm text-[var(--chrome-text)] truncate max-w-[200px]">
                     {tabInfo.title}
@@ -82,13 +81,13 @@ const ActiveTabSummary: React.FC = () => {
             <div className="flex items-center gap-3 flex-shrink-0">
                 <button
                     onClick={handleSummarize}
-                    className="text-sm font-medium text-[#8b5cf6] dark:text-[#a855f7] hover:text-[#7c3aed] transition-colors whitespace-nowrap"
+                    className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors whitespace-nowrap cursor-pointer"
                 >
                     Summarize
                 </button>
-                <div className="w-px h-4 bg-[var(--chrome-border)] opacity-60" />
+                <div className="w-px h-4 bg-[var(--glass-border)]" />
                 <button
-                    className="text-[var(--chrome-text)] opacity-60 hover:opacity-100 transition-opacity"
+                    className="text-[var(--chrome-text-secondary)] hover:text-[var(--accent)] transition-colors cursor-pointer"
                     title="Bookmark"
                 >
                     <Bookmark className="w-4 h-4" />

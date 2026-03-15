@@ -100,7 +100,7 @@ const ActionCard: React.FC<{ action: AgentStepAction }> = ({ action }) => {
 
     return (
         <div className={`action-card ${isError ? 'action-card-error' : ''} ${isExecuting ? 'action-card-executing' : ''}`}>
-            <span className={`action-card-icon ${isError ? 'text-red-400' : 'text-[var(--chrome-text-secondary)]'}`}>
+            <span className="action-card-icon">
                 {isExecuting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -111,7 +111,7 @@ const ActionCard: React.FC<{ action: AgentStepAction }> = ({ action }) => {
                 {formatActionText(action)}
             </span>
             {isError && action.error && (
-                <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 ml-auto" />
+                <XCircle className="w-3.5 h-3.5 text-[var(--error)] shrink-0 ml-auto" />
             )}
         </div>
     );
